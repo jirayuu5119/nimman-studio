@@ -1,10 +1,15 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle2, Home, CalendarDays } from "lucide-react";
+import {
+  CheckCircle2,
+  Home,
+  CalendarDays,
+} from "lucide-react";
 
-export default function BookingSuccessPage() {
+function SuccessContent() {
   const searchParams = useSearchParams();
 
   const bookingNo =
@@ -13,9 +18,7 @@ export default function BookingSuccessPage() {
   return (
     <main className="min-h-screen bg-[#F7F4EF] py-10">
       <div className="mx-auto max-w-3xl px-5">
-
         <div className="rounded-3xl bg-white p-10 shadow-xl text-center">
-
           <div className="flex justify-center">
             <CheckCircle2
               size={90}
@@ -32,7 +35,6 @@ export default function BookingSuccessPage() {
           </p>
 
           <div className="mt-10 rounded-2xl border border-green-200 bg-green-50 p-6">
-
             <div className="text-sm text-stone-500">
               Booking Number
             </div>
@@ -40,20 +42,15 @@ export default function BookingSuccessPage() {
             <div className="mt-2 text-3xl font-bold tracking-wider text-green-700">
               {bookingNo}
             </div>
-
           </div>
 
           <div className="mt-8 rounded-2xl bg-stone-50 p-6 text-left">
-
             <h2 className="font-bold text-xl text-[#4B3525]">
               ขั้นตอนถัดไป
             </h2>
 
             <ul className="mt-4 space-y-3 text-stone-600">
-
-              <li>
-                ✅ ทีมงานจะตรวจสอบสลิปการโอนเงิน
-              </li>
+              <li>✅ ทีมงานจะตรวจสอบสลิปการโอนเงิน</li>
 
               <li>
                 ✅ เมื่อยืนยันแล้ว สถานะการจองจะเปลี่ยนเป็น
@@ -67,13 +64,10 @@ export default function BookingSuccessPage() {
                 ✅ หากมีข้อมูลเพิ่มเติม
                 ทีมงานจะติดต่อกลับตามเบอร์โทรหรือ Line
               </li>
-
             </ul>
-
           </div>
 
           <div className="mt-10 grid gap-4 md:grid-cols-2">
-
             <Link
               href="/"
               className="flex items-center justify-center gap-2 rounded-xl border py-4 font-bold transition hover:bg-stone-100"
@@ -89,12 +83,17 @@ export default function BookingSuccessPage() {
               <CalendarDays size={20} />
               จองใหม่
             </Link>
-
           </div>
-
         </div>
-
       </div>
     </main>
+  );
+}
+
+export default function BookingSuccessPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SuccessContent />
+    </Suspense>
   );
 }

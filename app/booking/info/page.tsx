@@ -1,5 +1,5 @@
 "use client";
-
+import type { BookingData } from "@/types/booking";
 import { useRouter } from "next/navigation";
 import { useBooking } from "@/context/BookingContext";
 import { UNIVERSITIES } from "@/lib/universities";
@@ -23,7 +23,7 @@ export default function BookingInfoPage() {
     const { name, value } = e.target;
 
     if (name === "university") {
-      setBooking((prev) => ({
+      setBooking((prev: BookingData) => ({
         ...prev,
         university: value,
         faculty: "",
@@ -31,7 +31,7 @@ export default function BookingInfoPage() {
       return;
     }
 
-    setBooking((prev) => ({
+    setBooking((prev: BookingData) => ({
       ...prev,
       [name]: value,
     }));

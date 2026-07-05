@@ -4,19 +4,16 @@ export function isStep1Completed(booking: BookingData): boolean {
   return (
     booking.date !== null &&
     booking.period !== null &&
-    booking.package !== null
+    booking.hours !== null
   );
 }
 
 export function isStep2Completed(booking: BookingData): boolean {
-  const c = booking.customer;
-
   return (
-    c.fullname.trim() !== "" &&
-    c.phone.trim() !== "" &&
-    c.line.trim() !== "" &&
-    c.university.trim() !== "" &&
-    c.faculty.trim() !== ""
+    booking.fullname.trim() !== "" &&
+    booking.phone.trim() !== "" &&
+    booking.university.trim() !== "" &&
+    booking.faculty.trim() !== ""
   );
 }
 

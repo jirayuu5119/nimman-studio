@@ -1,3 +1,37 @@
+export type BookingPeriod = "morning" | "afternoon";
+
+export type BookingStatus =
+  | "draft"
+  | "pending"
+  | "paid"
+  | "confirmed"
+  | "completed"
+  | "cancelled";
+
+export type BookingData = {
+  date: Date | null;
+  period: BookingPeriod | null;
+package?: 3 | 4 | null;
+
+
+  hours: 3 | 4;
+  graduates: number;
+
+  fullname: string;
+  phone: string;
+  line: string;
+  facebook: string;
+
+  university: string;
+  faculty: string;
+  note: string;
+
+  totalPrice: number;
+  slipUrl: string;
+
+  status: BookingStatus;
+};
+
 export type Booking = {
   id: string;
 
@@ -19,7 +53,6 @@ export type Booking = {
   note: string;
 
   total_price: number;
-
   slip_url: string;
 
   status: string;
@@ -28,12 +61,15 @@ export type Booking = {
   updated_at: string;
 };
 
-export type BookingPeriod = "morning" | "afternoon";
+export type BookingPackage = {
+  id: string;
+  name: string;
+  title: string;
 
-export type BookingStatus =
-  | "draft"
-  | "pending"
-  | "paid"
-  | "confirmed"
-  | "completed"
-  | "cancelled";
+  hours: 3 | 4;
+  graduates: number;
+
+  price: number;
+  basePrice: number;
+  extraGraduatePrice: number;
+};
