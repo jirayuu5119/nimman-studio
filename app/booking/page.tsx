@@ -1,0 +1,244 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useBooking } from "@/context/BookingContext";
+import Calendar from "@/components/Calendar";
+import HourSelector from "@/components/HourSelector";
+import GraduateSelector from "@/components/GraduateSelector";
+import { CalendarDays, Sunrise, Sunset } from "lucide-react";
+import { PACKAGES } from "@/lib/packages";
+
+export default function BookingPage() {
+  const router = useRouter();
+
+  const { booking, setBooking } = useBooking();
+
+  const packageInfo =
+    booking.hours !== undefined ? PACKAGES[booking.hours] : null;
+
+  const extraPrice = packageInfo
+    ? (booking.graduates - 1) * packageInfo.extraGraduatePrice
+    : 0;
+
+  const totalPrice = packageInfo
+    ? packageInfo.basePrice + extraPrice
+    : 0;
+
+  const canNext =
+    booking.date !== undefined &&
+    booking.period !== null &&
+    booking.hours !== undefined;
+
+  return (
+    <main className="min-h-screen bg-stone-100 py-10">
+      <div className="mx-auto max-w-5xl">
+        <div className="rounded-3xl bg-white p-10 shadow-2xl">
+
+          <div className="text-center">
+            <h1 className="text-4xl font-black text-stone-800">
+              จองคิวถ่ายภาพรับปริญญา
+            </h1>
+
+            <p className="mt-3 text-stone-500">
+              ขั้นตอนที่ 1 เลือกวันที่ต้องการจอง
+            </p>
+          </div>
+
+          <div className="mt-10 flex justify-center">
+            <Calendar
+              selected={booking.date}
+              onSelect={(date) =>
+                setBooking((prev) => ({
+                  ...prev,
+                  date,
+                }))
+              }
+            />
+          </div>
+
+          {!booking.date && (
+            <p className="mt-4 text-center text-sm text-red-500">
+              กรุณาเลือกวันที่ต้องการจอง
+            </p>
+          )}
+
+          {booking.date && (
+            <>
+              <div className="mt-8 flex items-center justify-center gap-2">
+                <CalendarDays size={22} />
+
+                <span className="font-semibold">
+                  {booking.date.toLocaleDateString("th-TH")}
+                </span>
+              </div>
+
+              <h2 className="mt-10 text-center text-2xl font-bold">
+                เลือกรอบเวลา
+              </h2>
+
+              {!booking.period && (
+                <p className="mt-2 text-center text-sm text-red-500">
+                  กรุณาเลือกรอบเวลา
+                </p>
+              )}
+
+              <div className="mt-6 grid gap-6 md:grid-cols-2">
+
+                <button
+                  onClick={() =>
+                    setBooking((prev) => ({
+                      ...prev,
+                      period: "morning",
+                    }))
+                  }
+                  className={`rounded-2xl border p-8 transition ${
+                    booking.period === "morning"
+                      ? "bg-amber-700 text-white"
+                      : "bg-white hover:bg-stone-50"
+                  }`}
+                >
+                  <Sunrise className="mx-auto mb-4" size={42} />
+
+                  <h3 className="text-xl font-bold">
+                    รอบเช้า
+                  </h3>
+
+                  <p className="mt-2">
+                    07:00 - 12:00
+                  </p>
+                </button>
+
+                <button
+                  onClick={() =>
+                    setBooking((prev) => ({
+                      ...prev,
+                      period: "afternoon",
+                    }))
+                  }
+                  className={`rounded-2xl border p-8 transition ${
+                    booking.period === "afternoon"
+                      ? "bg-amber-700 text-white"
+                      : "bg-white hover:bg-stone-50"
+                  }`}
+                >
+                  <Sunset className="mx-auto mb-4" size={42} />
+
+                  <h3 className="text-xl font-bold">
+                    รอบบ่าย
+                  </h3>
+
+                  <p className="mt-2">
+                    13:00 - 18:00
+                  </p>
+                </button>
+
+              </div>
+
+              {booking.period && (
+                <>
+                  <HourSelector
+                    value={booking.hours}
+                    onChange={(value) =>
+                      setBooking((prev) => ({
+                        ...prev,
+                        hours: value as 3 | 4,
+                      }))
+                    }
+                  />
+
+                  <GraduateSelector
+                    value={booking.graduates}
+                    onChange={(value) =>
+                      setBooking((prev) => ({
+                        ...prev,
+                        graduates: value,
+                      }))
+                    }
+                    extraPrice={packageInfo?.extraGraduatePrice ?? 0}
+                  />
+
+                  {packageInfo && (
+                    <div className="mt-10 rounded-2xl border bg-stone-50 p-8">
+
+                      <h2 className="mb-6 text-2xl font-bold">
+                        📋 สรุปรายการจอง
+                      </h2>
+
+                      <div className="space-y-4">
+
+                        <div className="flex justify-between">
+                          <span>📅 วันที่</span>
+                          <span>
+                            {booking.date.toLocaleDateString("th-TH")}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between">
+                          <span>🌅 รอบเวลา</span>
+                          <span>
+                            {booking.period === "morning"
+                              ? "รอบเช้า"
+                              : "รอบบ่าย"}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between">
+                          <span>⏰ จำนวนชั่วโมง</span>
+                          <span>{packageInfo.title}</span>
+                        </div>
+
+                        <div className="flex justify-between">
+                          <span>🎓 จำนวนบัณฑิต</span>
+                          <span>{booking.graduates} คน</span>
+                        </div>
+
+                        <div className="flex justify-between">
+                          <span>💰 ราคาพื้นฐาน</span>
+                          <span>
+                            {packageInfo.basePrice.toLocaleString()} บาท
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between">
+                          <span>➕ เพิ่มบัณฑิต</span>
+                          <span>
+                            {extraPrice.toLocaleString()} บาท
+                          </span>
+                        </div>
+
+                        <hr />
+
+                        <div className="flex justify-between text-3xl font-bold text-amber-700">
+                          <span>รวมทั้งหมด</span>
+
+                          <span>
+                            {totalPrice.toLocaleString()} บาท
+                          </span>
+                        </div>
+
+                      </div>
+
+                      <button
+                        disabled={!canNext}
+                        onClick={() => router.push("/booking/info")}
+                        className={`mt-8 w-full rounded-xl py-4 text-xl font-bold text-white transition ${
+                          canNext
+                            ? "bg-amber-700 hover:bg-amber-800"
+                            : "cursor-not-allowed bg-stone-300"
+                        }`}
+                      >
+                        ถัดไป →
+                      </button>
+
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+
+        </div>
+      </div>
+    </main>
+  );
+}
