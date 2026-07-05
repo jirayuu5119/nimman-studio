@@ -1,3 +1,33 @@
+export type Booking = {
+  id: string;
+
+  booking_no: string;
+  booking_date: string;
+
+  period: string;
+  hours: number;
+  graduates: number;
+
+  fullname: string;
+  phone: string;
+  line: string;
+  facebook: string;
+
+  university: string;
+  faculty: string;
+
+  note: string;
+
+  total_price: number;
+
+  slip_url: string;
+
+  status: string;
+
+  created_at: string;
+  updated_at: string;
+};
+
 export type BookingPeriod = "morning" | "afternoon";
 
 export type BookingStatus =
@@ -7,32 +37,3 @@ export type BookingStatus =
   | "confirmed"
   | "completed"
   | "cancelled";
-
-export interface BookingData {
-  date: Date | null;
-  period: BookingPeriod | null;
-
-  hours: 3 | 4;
-  graduates: number;
-
-  fullname: string;
-  phone: string;
-  line: string;
-  facebook: string;
-  university: string;
-  faculty: string;
-  note: string;
-
-  totalPrice: number;
-
-  slipUrl: string;
-
-  status: BookingStatus;
-}
-
-export interface BookingPackage {
-  title: string;
-  hours: 3 | 4;
-  basePrice: number;
-  extraGraduatePrice: number;
-}
