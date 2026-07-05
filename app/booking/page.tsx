@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useBooking } from "@/context/BookingContext";
 import Calendar from "@/components/Calendar";
@@ -8,13 +9,36 @@ import GraduateSelector from "@/components/GraduateSelector";
 import { CalendarDays, Sunrise, Sunset } from "lucide-react";
 import { PACKAGES } from "@/lib/packages";
 
+type BookedSlot = {
+  booking_date: string;
+  period: "morning" | "afternoon";
+  status: string;
+};
+function formatDateLocal(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 export default function BookingPage() {
   const router = useRouter();
-
   const { booking, setBooking } = useBooking();
 
-  const packageInfo =
-    booking.hours !== undefined ? PACKAGES[booking.hours] : null;
+  const [bookedSlots, setBookedSlots] = useState<BookedSlot[]>([]);
+
+  useEffect(() => {
+    async function fetchAvailability() {
+      const res = await fetch("/api/bookings/availability");
+      const data = await res.json();
+      setBookedSlots(data);
+    }
+
+    fetchAvailability();
+  }, []);
+
+  const packageInfo = PACKAGES[booking.hours];
 
   const extraPrice = packageInfo
     ? (booking.graduates - 1) * packageInfo.extraGraduatePrice
@@ -24,16 +48,28 @@ export default function BookingPage() {
     ? packageInfo.basePrice + extraPrice
     : 0;
 
-  const canNext =
-    booking.date !== undefined &&
-    booking.period !== null &&
-    booking.hours !== undefined;
+  const selectedDateKey = booking.date
+  ? formatDateLocal(booking.date)
+  : null;
+
+  const isMorningBooked = bookedSlots.some(
+    (slot) =>
+      slot.booking_date === selectedDateKey &&
+      slot.period === "morning"
+  );
+
+  const isAfternoonBooked = bookedSlots.some(
+    (slot) =>
+      slot.booking_date === selectedDateKey &&
+      slot.period === "afternoon"
+  );
+
+  const canNext = booking.date !== null && booking.period !== null;
 
   return (
     <main className="min-h-screen bg-stone-100 py-10">
       <div className="mx-auto max-w-5xl">
         <div className="rounded-3xl bg-white p-10 shadow-2xl">
-
           <div className="text-center">
             <h1 className="text-4xl font-black text-stone-800">
               จองคิวถ่ายภาพรับปริญญา
@@ -47,10 +83,12 @@ export default function BookingPage() {
           <div className="mt-10 flex justify-center">
             <Calendar
               selected={booking.date}
+              bookedSlots={bookedSlots}
               onSelect={(date) =>
                 setBooking((prev) => ({
                   ...prev,
                   date,
+                  period: null,
                 }))
               }
             />
@@ -66,7 +104,6 @@ export default function BookingPage() {
             <>
               <div className="mt-8 flex items-center justify-center gap-2">
                 <CalendarDays size={22} />
-
                 <span className="font-semibold">
                   {booking.date.toLocaleDateString("th-TH")}
                 </span>
@@ -83,8 +120,8 @@ export default function BookingPage() {
               )}
 
               <div className="mt-6 grid gap-6 md:grid-cols-2">
-
                 <button
+                  disabled={isMorningBooked}
                   onClick={() =>
                     setBooking((prev) => ({
                       ...prev,
@@ -92,23 +129,24 @@ export default function BookingPage() {
                     }))
                   }
                   className={`rounded-2xl border p-8 transition ${
-                    booking.period === "morning"
+                    isMorningBooked
+                      ? "cursor-not-allowed bg-stone-200 text-stone-400"
+                      : booking.period === "morning"
                       ? "bg-amber-700 text-white"
                       : "bg-white hover:bg-stone-50"
                   }`}
                 >
                   <Sunrise className="mx-auto mb-4" size={42} />
 
-                  <h3 className="text-xl font-bold">
-                    รอบเช้า
-                  </h3>
+                  <h3 className="text-xl font-bold">รอบเช้า</h3>
 
                   <p className="mt-2">
-                    07:00 - 12:00
+                    {isMorningBooked ? "ถูกจองแล้ว" : "07:00 - 12:00"}
                   </p>
                 </button>
 
                 <button
+                  disabled={isAfternoonBooked}
                   onClick={() =>
                     setBooking((prev) => ({
                       ...prev,
@@ -116,22 +154,21 @@ export default function BookingPage() {
                     }))
                   }
                   className={`rounded-2xl border p-8 transition ${
-                    booking.period === "afternoon"
+                    isAfternoonBooked
+                      ? "cursor-not-allowed bg-stone-200 text-stone-400"
+                      : booking.period === "afternoon"
                       ? "bg-amber-700 text-white"
                       : "bg-white hover:bg-stone-50"
                   }`}
                 >
                   <Sunset className="mx-auto mb-4" size={42} />
 
-                  <h3 className="text-xl font-bold">
-                    รอบบ่าย
-                  </h3>
+                  <h3 className="text-xl font-bold">รอบบ่าย</h3>
 
                   <p className="mt-2">
-                    13:00 - 18:00
+                    {isAfternoonBooked ? "ถูกจองแล้ว" : "13:00 - 18:00"}
                   </p>
                 </button>
-
               </div>
 
               {booking.period && (
@@ -159,18 +196,14 @@ export default function BookingPage() {
 
                   {packageInfo && (
                     <div className="mt-10 rounded-2xl border bg-stone-50 p-8">
-
                       <h2 className="mb-6 text-2xl font-bold">
                         📋 สรุปรายการจอง
                       </h2>
 
                       <div className="space-y-4">
-
                         <div className="flex justify-between">
                           <span>📅 วันที่</span>
-                          <span>
-                            {booking.date.toLocaleDateString("th-TH")}
-                          </span>
+                          <span>{booking.date.toLocaleDateString("th-TH")}</span>
                         </div>
 
                         <div className="flex justify-between">
@@ -201,21 +234,15 @@ export default function BookingPage() {
 
                         <div className="flex justify-between">
                           <span>➕ เพิ่มบัณฑิต</span>
-                          <span>
-                            {extraPrice.toLocaleString()} บาท
-                          </span>
+                          <span>{extraPrice.toLocaleString()} บาท</span>
                         </div>
 
                         <hr />
 
                         <div className="flex justify-between text-3xl font-bold text-amber-700">
                           <span>รวมทั้งหมด</span>
-
-                          <span>
-                            {totalPrice.toLocaleString()} บาท
-                          </span>
+                          <span>{totalPrice.toLocaleString()} บาท</span>
                         </div>
-
                       </div>
 
                       <button
@@ -229,14 +256,12 @@ export default function BookingPage() {
                       >
                         ถัดไป →
                       </button>
-
                     </div>
                   )}
                 </>
               )}
             </>
           )}
-
         </div>
       </div>
     </main>
