@@ -1,6 +1,9 @@
 import { updateBookingStatus } from "@/app/admin/actions";
 import { createClient } from "@supabase/supabase-js";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function BookingDetail({
   params,
@@ -9,10 +12,14 @@ export default async function BookingDetail({
 }) {
   const { id } = await params;
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error("Missing Supabase environment variables");
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
   const { data: booking } = await supabase
     .from("bookings")
@@ -26,14 +33,14 @@ export default async function BookingDetail({
 
   async function approve() {
     "use server";
-
     await updateBookingStatus(id, "confirmed");
+    redirect(`/admin/bookings/${id}`);
   }
 
   async function reject() {
     "use server";
-
     await updateBookingStatus(id, "cancelled");
+    redirect(`/admin/bookings/${id}`);
   }
 
   return (
@@ -43,51 +50,24 @@ export default async function BookingDetail({
       </h1>
 
       <div className="space-y-3 rounded-xl border p-6">
-        <p>
-          <b>ชื่อ</b> : {booking.fullname || "-"}
-        </p>
+        <p><b>ชื่อ</b> : {booking.fullname || "-"}</p>
+        <p><b>โทร</b> : {booking.phone || "-"}</p>
+        <p><b>วันที่</b> : {booking.booking_date}</p>
+        <p><b>ช่วงเวลา</b> : {booking.period}</p>
+        <p><b>ชั่วโมง</b> : {booking.hours}</p>
+        <p><b>จำนวนบัณฑิต</b> : {booking.graduates}</p>
+        <p><b>มหาวิทยาลัย</b> : {booking.university || "-"}</p>
+        <p><b>คณะ</b> : {booking.faculty || "-"}</p>
+        <p><b>สถานะ</b> : {booking.status}</p>
+        <p><b>ยอดเงิน</b> : {booking.total_price} บาท</p>
 
-        <p>
-          <b>โทร</b> : {booking.phone || "-"}
-        </p>
-
-        <p>
-          <b>วันที่</b> : {booking.booking_date}
-        </p>
-
-        <p>
-          <b>ช่วงเวลา</b> : {booking.period}
-        </p>
-
-        <p>
-          <b>ชั่วโมง</b> : {booking.hours}
-        </p>
-
-        <p>
-          <b>จำนวนบัณฑิต</b> : {booking.graduates}
-        </p>
-
-        <p>
-          <b>มหาวิทยาลัย</b> : {booking.university || "-"}
-        </p>
-
-        <p>
-          <b>คณะ</b> : {booking.faculty || "-"}
-        </p>
-
-        <p>
-          <b>สถานะ</b> : {booking.status}
-        </p>
-
-        <p>
-          <b>ยอดเงิน</b> : {booking.total_price} บาท
-        </p>
-
-        <img
-          src={booking.slip_url}
-          alt="Slip"
-          className="mt-6 w-full rounded-xl border"
-        />
+        {booking.slip_url && (
+          <img
+            src={booking.slip_url}
+            alt="Slip"
+            className="mt-6 w-full rounded-xl border"
+          />
+        )}
 
         <div className="mt-8 flex gap-4">
           <form action={approve}>
