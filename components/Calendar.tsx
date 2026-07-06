@@ -88,28 +88,31 @@ export default function Calendar({
           full: "nf-day-full",
         }}
         classNames={{
+          root: "m-0",
           months: "flex justify-center",
           month: "space-y-4",
-          caption: "flex justify-center pt-1 relative items-center",
+          month_caption: "flex justify-center pt-1 relative items-center",
           caption_label:
             "text-sm font-semibold tracking-wide text-stone-800",
-          nav: "space-x-1 flex items-center",
-          nav_button:
+          nav: "absolute left-0 right-0 top-0 flex items-center justify-between",
+          button_previous:
             "h-8 w-8 rounded-full border border-stone-200 bg-white text-stone-500 hover:bg-stone-50 transition",
-          nav_button_previous: "absolute left-1",
-          nav_button_next: "absolute right-1",
-          table: "w-full border-collapse space-y-1",
-          head_row: "flex",
-          head_cell:
+          button_next:
+            "h-8 w-8 rounded-full border border-stone-200 bg-white text-stone-500 hover:bg-stone-50 transition",
+          month_grid: "w-full border-collapse",
+          weekdays: "flex",
+          weekday:
             "w-10 md:w-11 text-[11px] font-medium uppercase tracking-wide text-stone-400",
-          row: "mt-2 flex w-full",
-          cell: "relative h-10 w-10 md:h-11 md:w-11 p-0 text-center text-sm",
-          day: "h-10 w-10 md:h-11 md:w-11 rounded-full text-sm font-medium text-stone-700 transition hover:bg-stone-100",
-          day_selected:
+          weeks: "space-y-2",
+          week: "flex w-full",
+          day: "relative h-10 w-10 md:h-11 md:w-11 p-0 text-center text-sm",
+          day_button:
+            "h-10 w-10 md:h-11 md:w-11 rounded-full text-sm font-medium text-stone-700 transition hover:bg-stone-100",
+          selected:
             "bg-stone-900 text-white hover:bg-stone-900 focus:bg-stone-900",
-          day_today: "font-bold text-stone-900",
-          day_outside: "text-stone-300 opacity-40",
-          day_disabled:
+          today: "font-bold text-stone-900",
+          outside: "text-stone-300 opacity-40",
+          disabled:
             "cursor-not-allowed text-stone-300 opacity-70 hover:bg-transparent",
         }}
       />
