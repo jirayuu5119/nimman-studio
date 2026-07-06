@@ -2,21 +2,31 @@
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, Clock3, GraduationCap, Wallet } from "lucide-react";
+import {
+  CalendarDays,
+  Clock3,
+  GraduationCap,
+  Wallet,
+  User,
+  Phone,
+  MessageCircle,
+  AtSign,
+  School,
+  FileText,
+} from "lucide-react";
 
 import { useBooking } from "@/context/BookingContext";
 import { PACKAGES } from "@/lib/packages";
 
 export default function BookingSummaryPage() {
   const router = useRouter();
-
   const { booking, setBooking } = useBooking();
 
   const packageInfo = PACKAGES[booking.hours];
 
   const extraPrice =
-  Math.max(0, booking.graduates - 1) *
-  packageInfo.extraGraduatePrice;
+    Math.max(0, booking.graduates - 1) *
+    packageInfo.extraGraduatePrice;
 
   const totalPrice = useMemo(() => {
     return packageInfo.basePrice + extraPrice;
@@ -32,134 +42,180 @@ export default function BookingSummaryPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#F7F4EF] py-10">
-      <div className="mx-auto max-w-5xl px-5">
-        <div className="rounded-3xl bg-white p-8 shadow-xl md:p-10">
-          <div className="mb-10 text-center">
-            <h1 className="text-4xl font-bold text-[#4B3525]">
-              สรุปรายการจอง
-            </h1>
+    <main className="min-h-screen bg-[#f8f5f0] px-5 py-8 text-stone-900 md:py-12">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-10 text-center">
+          <p className="text-xs font-medium uppercase tracking-[0.35em] text-stone-400">
+            Step 03
+          </p>
 
-            <p className="mt-2 text-stone-500">
-              ขั้นตอนที่ 3 จาก 5
-            </p>
-          </div>
+          <h1 className="mt-4 font-serif text-4xl font-semibold tracking-tight text-stone-900 md:text-5xl">
+            สรุปรายการจอง
+          </h1>
 
-          <div className="space-y-4 rounded-2xl border border-stone-200 bg-stone-50 p-8">
+          <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-stone-500 md:text-base">
+            ตรวจสอบรายละเอียดก่อนเข้าสู่ขั้นตอนชำระมัดจำ
+          </p>
+        </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CalendarDays size={20} />
-                <span>วันที่</span>
+        <div className="rounded-[2rem] border border-stone-200/80 bg-white/90 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.06)] backdrop-blur md:p-10">
+          <div className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
+            <section className="rounded-[1.5rem] border border-stone-200 bg-stone-50/70 p-5 md:p-6">
+              <div className="mb-6">
+                <p className="text-xs font-medium uppercase tracking-[0.25em] text-stone-400">
+                  Booking Detail
+                </p>
+
+                <h2 className="mt-2 text-xl font-semibold text-stone-900">
+                  รายละเอียดการถ่าย
+                </h2>
               </div>
 
-              <span className="font-semibold">
-                {booking.date?.toLocaleDateString("th-TH")}
-              </span>
-            </div>
+              <div className="space-y-3">
+                <SummaryRow
+                  icon={<CalendarDays size={18} />}
+                  label="วันที่"
+                  value={booking.date?.toLocaleDateString("th-TH") || "-"}
+                />
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Clock3 size={20} />
-                <span>รอบเวลา</span>
+                <SummaryRow
+                  icon={<Clock3 size={18} />}
+                  label="รอบเวลา"
+                  value={
+                    booking.period === "morning"
+                      ? "รอบเช้า"
+                      : booking.period === "afternoon"
+                      ? "รอบบ่าย"
+                      : "-"
+                  }
+                />
+
+                <SummaryRow
+                  icon={<Clock3 size={18} />}
+                  label="ช่วงเวลาถ่าย"
+                  value={
+                    booking.startTime && booking.endTime
+                      ? `${booking.startTime} - ${booking.endTime}`
+                      : "-"
+                  }
+                />
+
+                <SummaryRow
+                  icon={<Clock3 size={18} />}
+                  label="จำนวนชั่วโมง"
+                  value={`${booking.hours} ชั่วโมง`}
+                />
+
+                <SummaryRow
+                  icon={<GraduationCap size={18} />}
+                  label="จำนวนบัณฑิต"
+                  value={`${booking.graduates} คน`}
+                />
               </div>
 
-              <span className="font-semibold">
-                {booking.period === "morning"
-                  ? "รอบเช้า"
-                  : "รอบบ่าย"}
-              </span>
-            </div>
+              <div className="mt-6 rounded-[1.25rem] border border-stone-200 bg-white p-5">
+                <div className="space-y-4 text-sm">
+                  <PriceRow
+                    label="แพ็กเกจ"
+                    value={`${packageInfo.basePrice.toLocaleString()} บาท`}
+                  />
 
-            <div className="flex items-center justify-between">
-              <span>จำนวนชั่วโมง</span>
+                  <PriceRow
+                    label="เพิ่มบัณฑิต"
+                    value={`${extraPrice.toLocaleString()} บาท`}
+                  />
 
-              <span className="font-semibold">
-                {booking.hours} ชั่วโมง
-              </span>
-            </div>
+                  <div className="h-px bg-stone-200" />
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <GraduationCap size={20} />
-                <span>จำนวนบัณฑิต</span>
-              </div>
+                  <div className="flex items-end justify-between gap-4">
+                    <div className="flex items-center gap-2 text-stone-500">
+                      <Wallet size={18} />
+                      <span>รวมทั้งหมด</span>
+                    </div>
 
-              <span className="font-semibold">
-                {booking.graduates} คน
-              </span>
-            </div>
-
-            <hr />
-
-            <div className="flex justify-between">
-              <span>แพ็กเกจ</span>
-
-              <span>
-                {packageInfo.basePrice.toLocaleString()} บาท
-              </span>
-            </div>
-
-            <div className="flex justify-between">
-              <span>เพิ่มบัณฑิต</span>
-
-              <span>
-                {extraPrice.toLocaleString()} บาท
-              </span>
-            </div>
-
-            <hr />
-
-            <div className="flex items-center justify-between text-3xl font-bold text-amber-700">
-              <div className="flex items-center gap-3">
-                <Wallet />
-                <span>รวมทั้งหมด</span>
-              </div>
-
-              <span>
-                {totalPrice.toLocaleString()} บาท
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-10 rounded-2xl border border-stone-200 p-8">
-            <h2 className="mb-5 text-2xl font-bold text-[#4B3525]">
-              ข้อมูลผู้จอง
-            </h2>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <Info title="ชื่อ" value={booking.fullname} />
-              <Info title="เบอร์โทร" value={booking.phone} />
-              <Info title="Line" value={booking.line} />
-              <Info title="Facebook" value={booking.facebook} />
-              <Info title="มหาวิทยาลัย" value={booking.university} />
-              <Info title="คณะ" value={booking.faculty} />
-            </div>
-
-            {booking.note && (
-              <div className="mt-6">
-                <div className="mb-2 font-semibold">
-                  รายละเอียดเพิ่มเติม
-                </div>
-
-                <div className="rounded-xl bg-stone-50 p-4 whitespace-pre-wrap">
-                  {booking.note}
+                    <span className="font-serif text-3xl font-semibold text-stone-900">
+                      {totalPrice.toLocaleString()} บาท
+                    </span>
+                  </div>
                 </div>
               </div>
-            )}
+            </section>
+
+            <section className="rounded-[1.5rem] border border-stone-200 bg-white p-5 md:p-6">
+              <div className="mb-6">
+                <p className="text-xs font-medium uppercase tracking-[0.25em] text-stone-400">
+                  Customer
+                </p>
+
+                <h2 className="mt-2 text-xl font-semibold text-stone-900">
+                  ข้อมูลผู้จอง
+                </h2>
+              </div>
+
+              <div className="space-y-3">
+                <Info
+                  icon={<User size={17} />}
+                  title="ชื่อ"
+                  value={booking.fullname}
+                />
+
+                <Info
+                  icon={<Phone size={17} />}
+                  title="เบอร์โทร"
+                  value={booking.phone}
+                />
+
+                <Info
+                  icon={<MessageCircle size={17} />}
+                  title="Line"
+                  value={booking.line}
+                />
+
+                <Info
+                  icon={<AtSign size={17} />}
+                  title="Facebook"
+                  value={booking.facebook}
+                />
+
+                <Info
+                  icon={<School size={17} />}
+                  title="มหาวิทยาลัย"
+                  value={booking.university}
+                />
+
+                <Info
+                  icon={<GraduationCap size={17} />}
+                  title="คณะ"
+                  value={booking.faculty}
+                />
+              </div>
+
+              {booking.note && (
+                <div className="mt-5 rounded-2xl border border-stone-200 bg-stone-50/80 p-4">
+                  <div className="mb-2 flex items-center gap-2 text-sm font-medium text-stone-700">
+                    <FileText size={16} />
+                    รายละเอียดเพิ่มเติม
+                  </div>
+
+                  <div className="whitespace-pre-wrap text-sm leading-6 text-stone-500">
+                    {booking.note}
+                  </div>
+                </div>
+              )}
+            </section>
           </div>
 
-          <div className="mt-10 flex gap-4">
+          <div className="mt-8 grid gap-3 md:grid-cols-2">
             <button
               onClick={() => router.back()}
-              className="flex-1 rounded-xl border py-4 text-lg font-bold transition hover:bg-stone-100"
+              className="rounded-full border border-stone-300 bg-white px-6 py-4 text-sm font-semibold tracking-[0.12em] text-stone-700 transition hover:border-stone-900"
             >
               ← ย้อนกลับ
             </button>
 
             <button
               onClick={handleConfirm}
-              className="flex-1 rounded-xl bg-amber-700 py-4 text-lg font-bold text-white transition hover:bg-amber-800"
+              className="rounded-full border border-stone-900 bg-stone-900 px-6 py-4 text-sm font-semibold tracking-[0.12em] text-white transition hover:bg-white hover:text-stone-900"
             >
               ยืนยันการจอง →
             </button>
@@ -170,20 +226,61 @@ export default function BookingSummaryPage() {
   );
 }
 
+function SummaryRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-2xl border border-stone-200 bg-white px-4 py-4">
+      <div className="flex items-center gap-3 text-sm text-stone-500">
+        <span className="text-stone-400">{icon}</span>
+        <span>{label}</span>
+      </div>
+
+      <span className="text-right text-sm font-semibold text-stone-900">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function PriceRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-stone-500">{label}</span>
+      <span className="font-medium text-stone-900">{value}</span>
+    </div>
+  );
+}
+
 function Info({
+  icon,
   title,
   value,
 }: {
+  icon: React.ReactNode;
   title: string;
   value: string;
 }) {
   return (
-    <div>
-      <div className="text-sm text-stone-500">
+    <div className="rounded-2xl border border-stone-200 bg-stone-50/70 px-4 py-4">
+      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.12em] text-stone-400">
+        {icon}
         {title}
       </div>
 
-      <div className="mt-1 rounded-xl border bg-stone-50 p-3 font-medium">
+      <div className="mt-2 text-sm font-medium leading-6 text-stone-900">
         {value || "-"}
       </div>
     </div>

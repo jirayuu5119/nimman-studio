@@ -9,18 +9,30 @@ export default function BookingButton() {
     <button
       onClick={() => router.push("/booking")}
       className="
+        group
         w-full
-        rounded-xl
-        bg-amber-700
-        hover:bg-amber-800
-        text-white
+        rounded-full
+        border
+        border-stone-900
+        bg-stone-900
+        px-6
         py-4
-        text-lg
+        text-sm
         font-semibold
+        tracking-[0.18em]
+        text-white
         transition
+        duration-300
+        hover:bg-white
+        hover:text-stone-900
       "
     >
-      เริ่มจองเลย
+      <span className="inline-flex items-center gap-3">
+        เริ่มจองคิว
+        <span className="transition duration-300 group-hover:translate-x-1">
+          →
+        </span>
+      </span>
     </button>
   );
 }
