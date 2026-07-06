@@ -70,5 +70,29 @@ export async function createBooking(
     throw error;
   }
 
+  try {
+    await fetch("/api/notify/booking", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        bookingNo,
+        fullname: booking.fullname,
+        phone: booking.phone,
+        line: booking.line,
+        bookingDate,
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        graduates: booking.graduates,
+        totalPrice: booking.totalPrice,
+        university: booking.university,
+        faculty: booking.faculty,
+      }),
+    });
+  } catch (err) {
+    console.error("Notify Error:", err);
+  }
+
   return data;
 }
