@@ -28,7 +28,7 @@ export default function Calendar({
   bookedSlots,
   onSelect,
 }: Props) {
-  function getDateStatus(date: Date) {
+  function getStatus(date: Date) {
     const dateKey = formatDateLocal(date);
 
     const booked = bookedSlots.filter(
@@ -48,7 +48,7 @@ export default function Calendar({
     return "available";
   }
 
-  const fullyBookedDays = bookedSlots
+  const disabledDays = bookedSlots
     .reduce((acc, slot) => {
       if (!acc[slot.booking_date]) {
         acc[slot.booking_date] = {
@@ -58,11 +58,10 @@ export default function Calendar({
       }
 
       acc[slot.booking_date][slot.period] = true;
-
       return acc;
     }, {} as Record<string, { morning: boolean; afternoon: boolean }>);
 
-  const disabledDays = Object.entries(fullyBookedDays)
+  const fullDays = Object.entries(disabledDays)
     .filter(([, value]) => value.morning && value.afternoon)
     .map(([date]) => new Date(date));
 
@@ -72,30 +71,16 @@ export default function Calendar({
         mode="single"
         selected={selected ?? undefined}
         onSelect={(date) => onSelect(date ?? null)}
-        disabled={disabledDays}
-        components={{
-          DayButton: (props) => {
-            const status = getDateStatus(props.day.date);
-
-            return (
-              <button
-                {...props}
-                className="relative flex h-10 w-10 items-center justify-center rounded-full text-sm hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <span>{props.day.date.getDate()}</span>
-
-                <span
-                  className={`absolute bottom-1 h-2 w-2 rounded-full ${
-                    status === "available"
-                      ? "bg-green-500"
-                      : status === "almost"
-                      ? "bg-yellow-400"
-                      : "bg-red-500"
-                  }`}
-                />
-              </button>
-            );
-          },
+        disabled={fullDays}
+        modifiers={{
+          available: (date) => getStatus(date) === "available",
+          almost: (date) => getStatus(date) === "almost",
+          full: (date) => getStatus(date) === "full",
+        }}
+        modifiersClassNames={{
+          available: "day-available",
+          almost: "day-almost",
+          full: "day-full",
         }}
       />
 

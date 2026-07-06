@@ -8,12 +8,14 @@ import HourSelector from "@/components/HourSelector";
 import GraduateSelector from "@/components/GraduateSelector";
 import { CalendarDays, Sunrise, Sunset } from "lucide-react";
 import { PACKAGES } from "@/lib/packages";
+import { getTimeSlots } from "@/lib/timeSlots";
 
 type BookedSlot = {
   booking_date: string;
   period: "morning" | "afternoon";
   status: string;
 };
+
 function formatDateLocal(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -48,23 +50,25 @@ export default function BookingPage() {
     ? packageInfo.basePrice + extraPrice
     : 0;
 
-  const selectedDateKey = booking.date
-  ? formatDateLocal(booking.date)
-  : null;
+  const selectedDateKey = booking.date ? formatDateLocal(booking.date) : null;
 
   const isMorningBooked = bookedSlots.some(
     (slot) =>
-      slot.booking_date === selectedDateKey &&
-      slot.period === "morning"
+      slot.booking_date === selectedDateKey && slot.period === "morning"
   );
 
   const isAfternoonBooked = bookedSlots.some(
     (slot) =>
-      slot.booking_date === selectedDateKey &&
-      slot.period === "afternoon"
+      slot.booking_date === selectedDateKey && slot.period === "afternoon"
   );
 
-  const canNext = booking.date !== null && booking.period !== null;
+  const timeSlots = getTimeSlots(booking.period, booking.hours);
+
+  const canNext =
+    booking.date !== null &&
+    booking.period !== null &&
+    booking.startTime !== null &&
+    booking.endTime !== null;
 
   return (
     <main className="min-h-screen bg-stone-100 py-10">
@@ -89,6 +93,8 @@ export default function BookingPage() {
                   ...prev,
                   date,
                   period: null,
+                  startTime: null,
+                  endTime: null,
                 }))
               }
             />
@@ -126,6 +132,8 @@ export default function BookingPage() {
                     setBooking((prev) => ({
                       ...prev,
                       period: "morning",
+                      startTime: null,
+                      endTime: null,
                     }))
                   }
                   className={`rounded-2xl border p-8 transition ${
@@ -137,9 +145,7 @@ export default function BookingPage() {
                   }`}
                 >
                   <Sunrise className="mx-auto mb-4" size={42} />
-
                   <h3 className="text-xl font-bold">รอบเช้า</h3>
-
                   <p className="mt-2">
                     {isMorningBooked ? "ถูกจองแล้ว" : "07:00 - 12:00"}
                   </p>
@@ -151,6 +157,8 @@ export default function BookingPage() {
                     setBooking((prev) => ({
                       ...prev,
                       period: "afternoon",
+                      startTime: null,
+                      endTime: null,
                     }))
                   }
                   className={`rounded-2xl border p-8 transition ${
@@ -162,9 +170,7 @@ export default function BookingPage() {
                   }`}
                 >
                   <Sunset className="mx-auto mb-4" size={42} />
-
                   <h3 className="text-xl font-bold">รอบบ่าย</h3>
-
                   <p className="mt-2">
                     {isAfternoonBooked ? "ถูกจองแล้ว" : "13:00 - 18:00"}
                   </p>
@@ -179,9 +185,52 @@ export default function BookingPage() {
                       setBooking((prev) => ({
                         ...prev,
                         hours: value as 3 | 4,
+                        startTime: null,
+                        endTime: null,
                       }))
                     }
                   />
+
+                  <div className="mt-10">
+                    <h2 className="text-center text-2xl font-bold">
+                      เลือกช่วงเวลาถ่าย
+                    </h2>
+
+                    {!booking.startTime && (
+                      <p className="mt-2 text-center text-sm text-red-500">
+                        กรุณาเลือกช่วงเวลาถ่าย
+                      </p>
+                    )}
+
+                    <div className="mt-6 grid gap-4 md:grid-cols-3">
+                      {timeSlots.map((slot) => {
+                        const active =
+                          booking.startTime === slot.startTime &&
+                          booking.endTime === slot.endTime;
+
+                        return (
+                          <button
+                            key={`${slot.startTime}-${slot.endTime}`}
+                            onClick={() =>
+                              setBooking((prev) => ({
+                                ...prev,
+                                period: slot.period,
+                                startTime: slot.startTime,
+                                endTime: slot.endTime,
+                              }))
+                            }
+                            className={`rounded-2xl border p-5 text-lg font-bold transition ${
+                              active
+                                ? "bg-amber-700 text-white"
+                                : "bg-white hover:bg-stone-50"
+                            }`}
+                          >
+                            {slot.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
                   <GraduateSelector
                     value={booking.graduates}
@@ -212,6 +261,15 @@ export default function BookingPage() {
                             {booking.period === "morning"
                               ? "รอบเช้า"
                               : "รอบบ่าย"}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between">
+                          <span>🕒 ช่วงเวลาถ่าย</span>
+                          <span>
+                            {booking.startTime && booking.endTime
+                              ? `${booking.startTime} - ${booking.endTime}`
+                              : "-"}
                           </span>
                         </div>
 

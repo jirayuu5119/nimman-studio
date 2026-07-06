@@ -9,7 +9,7 @@ const supabase = createClient(
 export async function GET() {
   const { data, error } = await supabase
     .from("bookings")
-    .select("booking_date, period, status")
+    .select("booking_date, period, start_time, end_time, status")
     .in("status", ["pending", "confirmed"]);
 
   if (error) {

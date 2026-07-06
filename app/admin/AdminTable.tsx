@@ -16,6 +16,14 @@ type Props = {
   status: string;
 };
 
+function displayTime(b: Booking) {
+  if (b.start_time && b.end_time) {
+    return `${b.start_time} - ${b.end_time}`;
+  }
+
+  return b.period === "morning" ? "รอบเช้า" : "รอบบ่าย";
+}
+
 export default function AdminTable({
   bookings,
   currentPage,
@@ -65,13 +73,21 @@ export default function AdminTable({
   };
 
   const exportCSV = () => {
-    const headers = ["Booking No", "Customer", "Phone", "Date", "Status"];
+    const headers = [
+      "Booking No",
+      "Customer",
+      "Phone",
+      "Date",
+      "Time",
+      "Status",
+    ];
 
     const rows = bookings.map((b) => [
       b.booking_no,
       b.fullname,
       b.phone,
       b.booking_date,
+      displayTime(b),
       b.status,
     ]);
 
@@ -99,6 +115,7 @@ export default function AdminTable({
       Customer: b.fullname,
       Phone: b.phone,
       Date: b.booking_date,
+      Time: displayTime(b),
       Status: b.status,
     }));
 
@@ -121,7 +138,6 @@ export default function AdminTable({
 
   return (
     <section className="space-y-6">
-      {/* Controls */}
       <div className="rounded-2xl border bg-white p-4 shadow-sm">
         <div className="flex flex-col gap-3 md:flex-row">
           <input
@@ -161,16 +177,16 @@ export default function AdminTable({
         </div>
       </div>
 
-      {/* Table */}
       <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] text-sm">
+          <table className="w-full min-w-[900px] text-sm">
             <thead className="bg-gray-50 text-gray-600">
               <tr>
                 <th className="p-4 text-left font-medium">Booking</th>
                 <th className="p-4 text-left font-medium">Customer</th>
                 <th className="p-4 text-left font-medium">Phone</th>
                 <th className="p-4 text-left font-medium">Date</th>
+                <th className="p-4 text-left font-medium">Time</th>
                 <th className="p-4 text-left font-medium">Status</th>
                 <th className="p-4 text-center font-medium">Action</th>
               </tr>
@@ -179,10 +195,7 @@ export default function AdminTable({
             <tbody>
               {bookings.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={6}
-                    className="p-10 text-center text-gray-500"
-                  >
+                  <td colSpan={7} className="p-10 text-center text-gray-500">
                     ไม่พบข้อมูลการจอง
                   </td>
                 </tr>
@@ -197,8 +210,9 @@ export default function AdminTable({
                     </td>
                     <td className="p-4 text-gray-700">{b.fullname}</td>
                     <td className="p-4 text-gray-700">{b.phone}</td>
-                    <td className="p-4 text-gray-700">
-                      {b.booking_date}
+                    <td className="p-4 text-gray-700">{b.booking_date}</td>
+                    <td className="p-4 font-medium text-gray-900">
+                      {displayTime(b)}
                     </td>
                     <td className="p-4">
                       <StatusBadge status={b.status} />
@@ -218,7 +232,6 @@ export default function AdminTable({
           </table>
         </div>
 
-        {/* Pagination */}
         <div className="flex items-center justify-between border-t px-4 py-4 text-sm">
           <button
             disabled={currentPage <= 1}

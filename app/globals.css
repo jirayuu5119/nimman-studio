@@ -127,4 +127,29 @@
   html {
     @apply font-sans;
   }
+}.rdp-day_button {
+  position: relative;
+}
+
+.rdp-day_button::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+}
+
+.day-available .rdp-day_button::after {
+  background: #22c55e;
+}
+
+.day-almost .rdp-day_button::after {
+  background: #facc15;
+}
+
+.day-full .rdp-day_button::after {
+  background: #ef4444;
 }

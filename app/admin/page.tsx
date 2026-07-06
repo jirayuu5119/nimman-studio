@@ -1,10 +1,21 @@
+import Link from "next/link";
 import LogoutButton from "@/components/admin/LogoutButton";
 import SectionTitle from "@/components/admin/SectionTitle";
 import RecentBookings from "@/components/admin/RecentBookings";
+import StatCard from "@/components/admin/StatCard";
 import RevenueChart from "./RevenueChart";
 import { createClient } from "@supabase/supabase-js";
 import AdminTable from "./AdminTable";
 import { Booking } from "@/types/booking";
+import {
+  CalendarDays,
+  CalendarRange,
+  CircleDollarSign,
+  Clock3,
+  BadgeCheck,
+  CircleX,
+} from "lucide-react";
+
 const PAGE_SIZE = 10;
 
 export default async function AdminPage({
@@ -99,87 +110,136 @@ export default async function AdminPage({
     }
   });
 
-  const chartData = Object.values(
-  (allBookings ?? []).reduce((acc: any, b) => {
-    const date = new Date(b.created_at)
-      .toISOString()
-      .split("T")[0];
+  type ChartItem = {
+  date: string;
+  revenue: number;
+};
 
-    if (!acc[date]) {
-      acc[date] = {
-        date,
-        revenue: 0,
-      };
-    }
+const chartData = Object.values(
+  (allBookings ?? []).reduce<Record<string, ChartItem>>((acc, b) => {
+      const date = new Date(b.created_at).toISOString().split("T")[0];
 
-    if (
-      b.status === "paid" ||
-      b.status === "confirmed" ||
-      b.status === "completed"
-    ) {
-      acc[date].revenue += b.total_price ?? 0;
-    }
+      if (!acc[date]) {
+        acc[date] = {
+          date,
+          revenue: 0,
+        };
+      }
 
-    return acc;
-  }, {})
-).sort(
-  (a: any, b: any) =>
-    new Date(a.date).getTime() -
-    new Date(b.date).getTime()
+      if (
+        b.status === "paid" ||
+        b.status === "confirmed" ||
+        b.status === "completed"
+      ) {
+        acc[date].revenue += b.total_price ?? 0;
+      }
+
+      return acc;
+    }, {})
+  ).sort(
+  (a, b) =>
+    new Date(a.date).getTime() - new Date(b.date).getTime()
 );
 
-return (
-  <main className="mx-auto max-w-7xl p-8">
-    <SectionTitle
-      title="Admin Dashboard"
-      subtitle="จัดการระบบจอง Nimman Foto"
-    />
+  return (
+  <main className="min-h-screen bg-stone-100 px-6 py-8">
+    <div className="mx-auto max-w-7xl">
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <SectionTitle
+          title="Admin Dashboard"
+          subtitle="จัดการระบบจอง Nimman Foto"
+        />
 
-    <div className="mb-6 flex justify-end">
-      <LogoutButton />
-    </div>
+        <LogoutButton />
+      </div>
 
-    <div className="mb-8 rounded-2xl border bg-white p-6 shadow-sm">
-      <h2 className="mb-4 text-lg font-semibold">
-        Revenue Trend
-      </h2>
+      <div className="mb-8 flex flex-wrap gap-3">
+        <Link
+          href="/admin"
+          className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white"
+        >
+          Bookings
+        </Link>
 
-      <RevenueChart
-        data={
-          chartData as {
-            date: string;
-            revenue: number;
-          }[]
-        }
+        <Link
+          href="/admin/calendar"
+          className="rounded-xl border bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          Calendar
+        </Link>
+      </div>
+
+      <div className="mb-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+        <StatCard
+          title="Today's Booking"
+          value={analytics.today}
+          icon={<CalendarDays size={24} className="text-white" />}
+          color="bg-blue-600"
+        />
+
+        <StatCard
+          title="This Month"
+          value={analytics.thisMonth}
+          icon={<CalendarRange size={24} className="text-white" />}
+          color="bg-violet-600"
+        />
+
+        <StatCard
+          title="Revenue"
+          value={`฿${analytics.totalRevenue.toLocaleString()}`}
+          icon={<CircleDollarSign size={24} className="text-white" />}
+          color="bg-emerald-600"
+        />
+
+        <StatCard
+          title="Pending"
+          value={analytics.pending}
+          icon={<Clock3 size={24} className="text-white" />}
+          color="bg-amber-500"
+        />
+
+        <StatCard
+          title="Confirmed"
+          value={analytics.confirmed}
+          icon={<BadgeCheck size={24} className="text-white" />}
+          color="bg-green-600"
+        />
+
+        <StatCard
+          title="Cancelled"
+          value={analytics.cancelled}
+          icon={<CircleX size={24} className="text-white" />}
+          color="bg-red-600"
+        />
+      </div>
+
+      <div className="mb-8 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-lg font-semibold text-stone-800">
+          Revenue Trend
+        </h2>
+
+        <RevenueChart
+          data={
+            chartData as {
+              date: string;
+              revenue: number;
+            }[]
+          }
+        />
+      </div>
+
+      <div className="mb-8">
+        <RecentBookings bookings={bookingList} />
+      </div>
+
+      <AdminTable
+        bookings={bookingList}
+        currentPage={page}
+        totalPages={Math.ceil((count ?? 0) / PAGE_SIZE)}
+        search={q}
+        status={status}
       />
     </div>
-
-    <div className="mb-8 rounded-2xl border bg-white p-6 shadow-sm">
-      <h2 className="mb-4 text-lg font-semibold">
-        Revenue Trend
-      </h2>
-
-      <RevenueChart
-        data={
-          chartData as {
-            date: string;
-            revenue: number;
-          }[]
-        }
-      />
-    </div>
-
-    <div className="mb-8">
-      <RecentBookings bookings={bookingList} />
-    </div>
-
-    <AdminTable
-      bookings={bookingList}
-      currentPage={page}
-      totalPages={Math.ceil((count ?? 0) / PAGE_SIZE)}
-      search={q}
-      status={status}
-    />
   </main>
 );
 }

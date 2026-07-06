@@ -10,9 +10,12 @@ export type BookingStatus =
 
 export type BookingData = {
   date: Date | null;
-  period: BookingPeriod | null;
-package?: 3 | 4 | null;
 
+  period: BookingPeriod | null;
+
+  // เวลาเริ่ม / เวลาสิ้นสุด
+  startTime: string | null;
+  endTime: string | null;
 
   hours: 3 | 4;
   graduates: number;
@@ -39,6 +42,10 @@ export type Booking = {
   booking_date: string;
 
   period: string;
+
+  start_time: string | null;
+  end_time: string | null;
+
   hours: number;
   graduates: number;
 

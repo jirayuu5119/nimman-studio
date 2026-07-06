@@ -17,6 +17,10 @@ export async function createBooking(
     throw new Error("กรุณาเลือกวันที่และรอบเวลา");
   }
 
+  if (!booking.startTime || !booking.endTime) {
+    throw new Error("กรุณาเลือกช่วงเวลาถ่าย");
+  }
+
   const bookingDate = formatDateLocal(booking.date);
 
   const { data: existingBooking, error: checkError } = await supabase
@@ -24,6 +28,8 @@ export async function createBooking(
     .select("id")
     .eq("booking_date", bookingDate)
     .eq("period", booking.period)
+    .eq("start_time", booking.startTime)
+    .eq("end_time", booking.endTime)
     .in("status", ["pending", "confirmed"])
     .maybeSingle();
 
@@ -33,7 +39,7 @@ export async function createBooking(
   }
 
   if (existingBooking) {
-    throw new Error("รอบเวลานี้ถูกจองแล้ว กรุณาเลือกวันหรือช่วงเวลาอื่น");
+    throw new Error("ช่วงเวลานี้ถูกจองแล้ว กรุณาเลือกช่วงเวลาอื่น");
   }
 
   const { data, error } = await supabase
@@ -42,6 +48,8 @@ export async function createBooking(
       booking_no: bookingNo,
       booking_date: bookingDate,
       period: booking.period,
+      start_time: booking.startTime,
+      end_time: booking.endTime,
       hours: booking.hours,
       graduates: booking.graduates,
       fullname: booking.fullname,
