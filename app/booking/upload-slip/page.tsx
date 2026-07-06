@@ -16,12 +16,19 @@ import { uploadSlip } from "@/lib/storage";
 import { generateBookingNo } from "@/lib/booking";
 import { createBooking } from "@/lib/database";
 
+const DEPOSIT_AMOUNT = 1000;
+
 export default function UploadSlipPage() {
   const router = useRouter();
   const { booking, setBooking } = useBooking();
 
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const depositAmount = booking.depositAmount ?? DEPOSIT_AMOUNT;
+  const totalPrice = booking.totalPrice ?? 0;
+  const remainingAmount =
+    booking.remainingAmount ?? Math.max(totalPrice - depositAmount, 0);
 
   const preview = useMemo(() => {
     if (!file) return "";
@@ -72,16 +79,20 @@ export default function UploadSlipPage() {
 
       const result = await createBooking(bookingNo, {
         ...booking,
+        depositAmount,
+        remainingAmount,
         slipUrl,
         status: "pending",
       });
 
-      if (!result || result.length === 0) {
+      if (!result) {
         throw new Error("บันทึกการจองไม่สำเร็จ กรุณาลองใหม่");
       }
 
       setBooking((prev) => ({
         ...prev,
+        depositAmount,
+        remainingAmount,
         slipUrl,
         status: "pending",
       }));
@@ -178,15 +189,42 @@ export default function UploadSlipPage() {
                     <CheckCircle2 size={22} />
                   </div>
 
-                  <div>
-                    <p className="text-sm text-stone-300">ยอดชำระ</p>
+                  <div className="w-full">
+                    <p className="text-sm text-stone-300">ยอดมัดจำ</p>
 
                     <div className="mt-2 font-serif text-4xl font-semibold">
-                      {booking.totalPrice.toLocaleString()} บาท
+                      {depositAmount.toLocaleString()} บาท
+                    </div>
+
+                    <div className="mt-5 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
+                      <div className="flex justify-between gap-4">
+                        <span className="text-stone-300">ราคาเต็ม</span>
+                        <span className="font-medium text-white">
+                          {totalPrice.toLocaleString()} บาท
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between gap-4">
+                        <span className="text-stone-300">มัดจำ</span>
+                        <span className="font-medium text-white">
+                          {depositAmount.toLocaleString()} บาท
+                        </span>
+                      </div>
+
+                      <div className="h-px bg-white/10" />
+
+                      <div className="flex justify-between gap-4">
+                        <span className="text-stone-300">
+                          ยอดคงเหลือวันงาน
+                        </span>
+                        <span className="font-semibold text-white">
+                          {remainingAmount.toLocaleString()} บาท
+                        </span>
+                      </div>
                     </div>
 
                     <p className="mt-3 text-sm leading-6 text-stone-300">
-                      กรุณาตรวจสอบยอดในสลิปให้ตรงกับยอดชำระก่อนกดยืนยัน
+                      กรุณาตรวจสอบยอดในสลิปให้ตรงกับยอดมัดจำก่อนกดยืนยัน
                     </p>
                   </div>
                 </div>
