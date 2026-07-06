@@ -10,10 +10,8 @@ export type BookingStatus =
 
 export type BookingData = {
   date: Date | null;
-
   period: BookingPeriod | null;
 
-  // เวลาเริ่ม / เวลาสิ้นสุด
   startTime: string | null;
   endTime: string | null;
 
@@ -30,6 +28,9 @@ export type BookingData = {
   note: string;
 
   totalPrice: number;
+  depositAmount: number;
+  remainingAmount: number;
+
   slipUrl: string;
 
   status: BookingStatus;
@@ -37,11 +38,10 @@ export type BookingData = {
 
 export type Booking = {
   id: string;
-
   booking_no: string;
-  booking_date: string;
 
-  period: string;
+  booking_date: string;
+  period: BookingPeriod;
 
   start_time: string | null;
   end_time: string | null;
@@ -51,32 +51,21 @@ export type Booking = {
 
   fullname: string;
   phone: string;
-  line: string;
-  facebook: string;
+  line: string | null;
+  facebook: string | null;
 
-  university: string;
-  faculty: string;
-
-  note: string;
+  university: string | null;
+  faculty: string | null;
+  note: string | null;
 
   total_price: number;
-  slip_url: string;
+  deposit_amount: number;
+  remaining_amount: number;
 
-  status: string;
+  slip_url: string | null;
+
+  status: BookingStatus;
 
   created_at: string;
-  updated_at: string;
-};
-
-export type BookingPackage = {
-  id: string;
-  name: string;
-  title: string;
-
-  hours: 3 | 4;
-  graduates: number;
-
-  price: number;
-  basePrice: number;
-  extraGraduatePrice: number;
+  updated_at?: string;
 };

@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { Check, Copy, CreditCard } from "lucide-react";
 import { useBooking } from "@/context/BookingContext";
 
+const DEPOSIT_AMOUNT = 1000;
+
 export default function BookingPaymentPage() {
   const router = useRouter();
   const { booking } = useBooking();
@@ -13,6 +15,11 @@ export default function BookingPaymentPage() {
   const [copied, setCopied] = useState(false);
 
   const realPromptPayNumber = "8302376723";
+
+  const totalPrice = booking.totalPrice ?? 0;
+  const depositAmount = booking.depositAmount ?? DEPOSIT_AMOUNT;
+  const remainingAmount =
+    booking.remainingAmount ?? Math.max(totalPrice - depositAmount, 0);
 
   const copyPromptPay = async () => {
     await navigator.clipboard.writeText(realPromptPayNumber);
@@ -51,7 +58,7 @@ export default function BookingPaymentPage() {
                 </p>
 
                 <h2 className="mt-2 text-xl font-semibold text-stone-900">
-                  สแกนเพื่อชำระเงิน
+                  สแกนเพื่อชำระมัดจำ
                 </h2>
               </div>
 
@@ -65,6 +72,10 @@ export default function BookingPaymentPage() {
                   className="h-auto w-full rounded-xl"
                 />
               </div>
+
+              <p className="mt-4 text-center text-xs leading-6 text-stone-500">
+                กรุณาโอนยอดมัดจำ {depositAmount.toLocaleString()} บาท
+              </p>
             </section>
 
             <section className="space-y-5">
@@ -105,13 +116,40 @@ export default function BookingPaymentPage() {
                     <CreditCard size={22} />
                   </div>
 
-                  <div>
+                  <div className="w-full">
                     <p className="text-sm text-stone-300">
-                      ยอดที่ต้องชำระ
+                      ยอดมัดจำที่ต้องชำระ
                     </p>
 
                     <div className="mt-2 font-serif text-4xl font-semibold">
-                      {booking.totalPrice.toLocaleString()} บาท
+                      {depositAmount.toLocaleString()} บาท
+                    </div>
+
+                    <div className="mt-5 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
+                      <div className="flex justify-between gap-4">
+                        <span className="text-stone-300">ราคาเต็ม</span>
+                        <span className="font-medium text-white">
+                          {totalPrice.toLocaleString()} บาท
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between gap-4">
+                        <span className="text-stone-300">ชำระมัดจำ</span>
+                        <span className="font-medium text-white">
+                          {depositAmount.toLocaleString()} บาท
+                        </span>
+                      </div>
+
+                      <div className="h-px bg-white/10" />
+
+                      <div className="flex justify-between gap-4">
+                        <span className="text-stone-300">
+                          ยอดคงเหลือวันงาน
+                        </span>
+                        <span className="font-semibold text-white">
+                          {remainingAmount.toLocaleString()} บาท
+                        </span>
+                      </div>
                     </div>
 
                     <p className="mt-3 text-sm leading-6 text-stone-300">
@@ -128,7 +166,7 @@ export default function BookingPaymentPage() {
                 </h3>
 
                 <p className="mt-2 text-sm leading-6 text-stone-500">
-                  กรุณาตรวจสอบยอดโอนให้ถูกต้อง และเก็บสลิปไว้สำหรับอัปโหลดยืนยันการจอง
+                  กรุณาตรวจสอบยอดโอนมัดจำให้ถูกต้อง และเก็บสลิปไว้สำหรับอัปโหลดยืนยันการจอง
                 </p>
               </div>
             </section>

@@ -21,7 +21,19 @@ export async function createBooking(
     throw new Error("กรุณาเลือกช่วงเวลาถ่าย");
   }
 
+  if (!booking.fullname || !booking.phone) {
+    throw new Error("กรุณากรอกชื่อและเบอร์โทร");
+  }
+
+  if (!booking.slipUrl) {
+    throw new Error("กรุณาอัปโหลดสลิปมัดจำ");
+  }
+
   const bookingDate = formatDateLocal(booking.date);
+
+  const totalPrice = booking.totalPrice;
+  const depositAmount = 1000;
+  const remainingAmount = Math.max(totalPrice - depositAmount, 0);
 
   const { data: existingBooking, error: checkError } = await supabase
     .from("bookings")
@@ -30,12 +42,12 @@ export async function createBooking(
     .eq("period", booking.period)
     .eq("start_time", booking.startTime)
     .eq("end_time", booking.endTime)
-    .in("status", ["pending", "confirmed"])
+    .in("status", ["pending", "paid", "confirmed"])
     .maybeSingle();
 
   if (checkError) {
-    console.error(checkError);
-    throw checkError;
+    console.error("Check booking error:", checkError);
+    throw new Error("ตรวจสอบช่วงเวลาจองไม่สำเร็จ");
   }
 
   if (existingBooking) {
@@ -46,28 +58,38 @@ export async function createBooking(
     .from("bookings")
     .insert({
       booking_no: bookingNo,
+
       booking_date: bookingDate,
       period: booking.period,
       start_time: booking.startTime,
       end_time: booking.endTime,
+
       hours: booking.hours,
       graduates: booking.graduates,
+
       fullname: booking.fullname,
       phone: booking.phone,
-      line: booking.line,
-      facebook: booking.facebook,
-      university: booking.university,
-      faculty: booking.faculty,
-      note: booking.note,
-      total_price: booking.totalPrice,
+      line: booking.line || null,
+      facebook: booking.facebook || null,
+
+      university: booking.university || null,
+      faculty: booking.faculty || null,
+      note: booking.note || null,
+
+      total_price: totalPrice,
+      deposit_amount: depositAmount,
+      remaining_amount: remainingAmount,
+
       slip_url: booking.slipUrl,
-      status: booking.status,
+
+      status: "pending",
     })
-    .select();
+    .select()
+    .single();
 
   if (error) {
-    console.error(error);
-    throw error;
+    console.error("Create booking error:", error);
+    throw new Error("บันทึกข้อมูลการจองไม่สำเร็จ");
   }
 
   try {
@@ -85,7 +107,9 @@ export async function createBooking(
         startTime: booking.startTime,
         endTime: booking.endTime,
         graduates: booking.graduates,
-        totalPrice: booking.totalPrice,
+        totalPrice,
+        depositAmount,
+        remainingAmount,
         university: booking.university,
         faculty: booking.faculty,
       }),

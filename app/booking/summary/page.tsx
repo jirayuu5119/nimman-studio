@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   CalendarDays,
@@ -18,6 +18,8 @@ import {
 import { useBooking } from "@/context/BookingContext";
 import { PACKAGES } from "@/lib/packages";
 
+const DEPOSIT_AMOUNT = 1000;
+
 export default function BookingSummaryPage() {
   const router = useRouter();
   const { booking, setBooking } = useBooking();
@@ -32,10 +34,17 @@ export default function BookingSummaryPage() {
     return packageInfo.basePrice + extraPrice;
   }, [packageInfo, extraPrice]);
 
+  const remainingAmount = Math.max(
+    totalPrice - DEPOSIT_AMOUNT,
+    0
+  );
+
   const handleConfirm = () => {
     setBooking((prev) => ({
       ...prev,
       totalPrice,
+      depositAmount: DEPOSIT_AMOUNT,
+      remainingAmount,
     }));
 
     router.push("/booking/payment");
@@ -75,7 +84,9 @@ export default function BookingSummaryPage() {
                 <SummaryRow
                   icon={<CalendarDays size={18} />}
                   label="วันที่"
-                  value={booking.date?.toLocaleDateString("th-TH") || "-"}
+                  value={
+                    booking.date?.toLocaleDateString("th-TH") || "-"
+                  }
                 />
 
                 <SummaryRow
@@ -127,15 +138,37 @@ export default function BookingSummaryPage() {
 
                   <div className="h-px bg-stone-200" />
 
-                  <div className="flex items-end justify-between gap-4">
-                    <div className="flex items-center gap-2 text-stone-500">
-                      <Wallet size={18} />
-                      <span>รวมทั้งหมด</span>
+                  <PriceRow
+                    label="ราคาเต็ม"
+                    value={`${totalPrice.toLocaleString()} บาท`}
+                  />
+
+                  <PriceRow
+                    label="ชำระมัดจำวันนี้"
+                    value={`${DEPOSIT_AMOUNT.toLocaleString()} บาท`}
+                    highlight
+                  />
+
+                  <PriceRow
+                    label="ยอดคงเหลือวันงาน"
+                    value={`${remainingAmount.toLocaleString()} บาท`}
+                  />
+
+                  <div className="rounded-2xl border border-stone-200 bg-stone-50/80 p-4">
+                    <div className="flex items-end justify-between gap-4">
+                      <div className="flex items-center gap-2 text-stone-500">
+                        <Wallet size={18} />
+                        <span>ยอดที่ต้องโอนตอนนี้</span>
+                      </div>
+
+                      <span className="font-serif text-3xl font-semibold text-stone-900">
+                        {DEPOSIT_AMOUNT.toLocaleString()} บาท
+                      </span>
                     </div>
 
-                    <span className="font-serif text-3xl font-semibold text-stone-900">
-                      {totalPrice.toLocaleString()} บาท
-                    </span>
+                    <p className="mt-3 text-xs leading-6 text-stone-500">
+                      ส่วนที่เหลือชำระภายในวันถ่ายงาน หรือตามเงื่อนไขที่ตกลงกับช่างภาพ
+                    </p>
                   </div>
                 </div>
               </div>
@@ -217,7 +250,7 @@ export default function BookingSummaryPage() {
               onClick={handleConfirm}
               className="rounded-full border border-stone-900 bg-stone-900 px-6 py-4 text-sm font-semibold tracking-[0.12em] text-white transition hover:bg-white hover:text-stone-900"
             >
-              ยืนยันการจอง →
+              ไปชำระมัดจำ →
             </button>
           </div>
         </div>
@@ -231,7 +264,7 @@ function SummaryRow({
   label,
   value,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   value: string;
 }) {
@@ -252,14 +285,33 @@ function SummaryRow({
 function PriceRow({
   label,
   value,
+  highlight = false,
 }: {
   label: string;
   value: string;
+  highlight?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-stone-500">{label}</span>
-      <span className="font-medium text-stone-900">{value}</span>
+      <span
+        className={
+          highlight
+            ? "font-semibold text-stone-900"
+            : "text-stone-500"
+        }
+      >
+        {label}
+      </span>
+
+      <span
+        className={
+          highlight
+            ? "font-semibold text-stone-900"
+            : "font-medium text-stone-900"
+        }
+      >
+        {value}
+      </span>
     </div>
   );
 }
@@ -269,7 +321,7 @@ function Info({
   title,
   value,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
   value: string;
 }) {

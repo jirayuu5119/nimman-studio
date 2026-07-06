@@ -37,6 +37,10 @@ const initialBooking: BookingData = {
   note: "",
 
   totalPrice: 0,
+
+  depositAmount: 1000,
+  remainingAmount: 0,
+
   slipUrl: "",
 
   status: "draft",
@@ -60,12 +64,19 @@ export function BookingProvider({
 
     const data = JSON.parse(saved);
 
+    const totalPrice = data.totalPrice ?? 0;
+    const depositAmount = data.depositAmount ?? 1000;
+    const remainingAmount =
+      data.remainingAmount ?? Math.max(totalPrice - depositAmount, 0);
+
     return {
       ...initialBooking,
       ...data,
       date: data.date ? new Date(data.date) : null,
       startTime: data.startTime ?? null,
       endTime: data.endTime ?? null,
+      depositAmount,
+      remainingAmount,
     };
   });
 
