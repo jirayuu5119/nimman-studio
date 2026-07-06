@@ -1,60 +1,31 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
-export async function POST(req: Request) {
-  const body = await req.json();
+export const dynamic = "force-dynamic";
 
-  const message = `
-## 📸 มี Booking ใหม่
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-**Booking**
-${body.bookingNo}
+export async function GET() {
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("booking_date, period, status")
+    .in("status", ["pending", "confirmed"]);
 
-👤 ${body.fullname}
-📞 ${body.phone}
-💬 LINE : ${body.line || "-"}
-
-📅 ${body.bookingDate}
-🕘 ${body.startTime} - ${body.endTime}
-
-🎓 ${body.graduates} คน
-
-🏫 ${body.university || "-"}
-🎓 ${body.faculty || "-"}
-
-💰 ${Number(body.totalPrice).toLocaleString()} บาท
-`;
-
-  try {
-    const response = await fetch(
-      process.env.DISCORD_WEBHOOK_URL!,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          content: message,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Discord Webhook Error");
-    }
-
-    return NextResponse.json({
-      success: true,
-    });
-  } catch (err) {
-    console.error(err);
+  if (error) {
+    console.error("Availability Error:", error);
 
     return NextResponse.json(
       {
-        success: false,
+        error: error.message,
       },
       {
         status: 500,
       }
     );
   }
+
+  return NextResponse.json(data ?? []);
 }
