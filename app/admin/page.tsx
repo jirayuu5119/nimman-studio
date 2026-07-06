@@ -1,8 +1,7 @@
 import Link from "next/link";
 import LogoutButton from "@/components/admin/LogoutButton";
-import SectionTitle from "@/components/admin/SectionTitle";
-import RecentBookings from "@/components/admin/RecentBookings";
-import StatCard from "@/components/admin/StatCard";
+import RecentBookings from "./RecentBookings";
+import StatCard from "./StatCard";
 import RevenueChart from "./RevenueChart";
 import { createClient } from "@supabase/supabase-js";
 import AdminTable from "./AdminTable";
@@ -29,7 +28,7 @@ export default async function AdminPage({
 }) {
   const params = await searchParams;
 
-  const page = Number(params.page ?? 1);
+  const page = Math.max(1, Number(params.page ?? 1));
   const q = params.q ?? "";
   const status = params.status ?? "all";
 
@@ -111,12 +110,12 @@ export default async function AdminPage({
   });
 
   type ChartItem = {
-  date: string;
-  revenue: number;
-};
+    date: string;
+    revenue: number;
+  };
 
-const chartData = Object.values(
-  (allBookings ?? []).reduce<Record<string, ChartItem>>((acc, b) => {
+  const chartData = Object.values(
+    (allBookings ?? []).reduce<Record<string, ChartItem>>((acc, b) => {
       const date = new Date(b.created_at).toISOString().split("T")[0];
 
       if (!acc[date]) {
@@ -137,109 +136,149 @@ const chartData = Object.values(
       return acc;
     }, {})
   ).sort(
-  (a, b) =>
-    new Date(a.date).getTime() - new Date(b.date).getTime()
-);
+    (a, b) =>
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
 
   return (
-  <main className="min-h-screen bg-stone-100 px-6 py-8">
-    <div className="mx-auto max-w-7xl">
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <SectionTitle
-          title="Admin Dashboard"
-          subtitle="จัดการระบบจอง Nimman Foto"
-        />
+    <main className="min-h-screen bg-[#f8f5f0] px-5 py-8 text-stone-900 md:px-8 md:py-10">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-[0.35em] text-stone-400">
+              Nimman Foto Admin
+            </p>
 
-        <LogoutButton />
+            <h1 className="mt-4 font-serif text-4xl font-semibold tracking-tight text-stone-900 md:text-5xl">
+              Admin Dashboard
+            </h1>
+
+            <p className="mt-3 text-sm leading-6 text-stone-500">
+              จัดการรายการจอง ตรวจสอบยอด และอัปเดตสถานะการจอง
+            </p>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-3">
+            <LogoutButton />
+          </div>
+        </div>
+
+        <div className="mb-8 flex flex-wrap gap-3 rounded-[1.5rem] border border-stone-200/80 bg-white/80 p-2 shadow-[0_12px_40px_rgba(0,0,0,0.04)] backdrop-blur">
+          <Link
+            href="/admin"
+            className="rounded-full border border-stone-900 bg-stone-900 px-5 py-3 text-sm font-semibold tracking-[0.08em] text-white transition hover:bg-white hover:text-stone-900"
+          >
+            Bookings
+          </Link>
+
+          <Link
+            href="/admin/calendar"
+            className="rounded-full border border-stone-200 bg-white px-5 py-3 text-sm font-semibold tracking-[0.08em] text-stone-700 transition hover:border-stone-900"
+          >
+            Calendar
+          </Link>
+        </div>
+
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+          <StatCard
+            title="Today's Booking"
+            value={analytics.today}
+            icon={<CalendarDays size={22} className="text-white" />}
+            color="bg-stone-900"
+          />
+
+          <StatCard
+            title="This Month"
+            value={analytics.thisMonth}
+            icon={<CalendarRange size={22} className="text-white" />}
+            color="bg-stone-800"
+          />
+
+          <StatCard
+            title="Revenue"
+            value={`฿${analytics.totalRevenue.toLocaleString()}`}
+            icon={<CircleDollarSign size={22} className="text-white" />}
+            color="bg-emerald-700"
+          />
+
+          <StatCard
+            title="Pending"
+            value={analytics.pending}
+            icon={<Clock3 size={22} className="text-white" />}
+            color="bg-amber-500"
+          />
+
+          <StatCard
+            title="Confirmed"
+            value={analytics.confirmed}
+            icon={<BadgeCheck size={22} className="text-white" />}
+            color="bg-green-700"
+          />
+
+          <StatCard
+            title="Cancelled"
+            value={analytics.cancelled}
+            icon={<CircleX size={22} className="text-white" />}
+            color="bg-rose-500"
+          />
+        </div>
+
+        <div className="mb-8 rounded-[2rem] border border-stone-200/80 bg-white/90 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.06)] backdrop-blur md:p-6">
+          <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.25em] text-stone-400">
+                Analytics
+              </p>
+
+              <h2 className="mt-2 text-xl font-semibold text-stone-900">
+                Revenue Trend
+              </h2>
+            </div>
+
+            <p className="text-sm text-stone-500">
+              รายได้จากรายการที่ยืนยันแล้ว
+            </p>
+          </div>
+
+          <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50/70 p-4">
+            <RevenueChart
+              data={
+                chartData as {
+                  date: string;
+                  revenue: number;
+                }[]
+              }
+            />
+          </div>
+        </div>
+
+        <div className="mb-8">
+          <RecentBookings bookings={bookingList} />
+        </div>
+
+        <div className="rounded-[2rem] border border-stone-200/80 bg-white/90 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.06)] backdrop-blur md:p-6">
+          <div className="mb-6">
+            <p className="text-xs font-medium uppercase tracking-[0.25em] text-stone-400">
+              Booking Management
+            </p>
+
+            <h2 className="mt-2 text-xl font-semibold text-stone-900">
+              รายการจองทั้งหมด
+            </h2>
+          </div>
+
+          <AdminTable
+            bookings={bookingList}
+            currentPage={page}
+            totalPages={Math.max(
+              1,
+              Math.ceil((count ?? 0) / PAGE_SIZE)
+            )}
+            search={q}
+            status={status}
+          />
+        </div>
       </div>
-
-      <div className="mb-8 flex flex-wrap gap-3">
-        <Link
-          href="/admin"
-          className="rounded-xl bg-black px-4 py-2 text-sm font-medium text-white"
-        >
-          Bookings
-        </Link>
-
-        <Link
-          href="/admin/calendar"
-          className="rounded-xl border bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-        >
-          Calendar
-        </Link>
-      </div>
-
-      <div className="mb-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-        <StatCard
-          title="Today's Booking"
-          value={analytics.today}
-          icon={<CalendarDays size={24} className="text-white" />}
-          color="bg-blue-600"
-        />
-
-        <StatCard
-          title="This Month"
-          value={analytics.thisMonth}
-          icon={<CalendarRange size={24} className="text-white" />}
-          color="bg-violet-600"
-        />
-
-        <StatCard
-          title="Revenue"
-          value={`฿${analytics.totalRevenue.toLocaleString()}`}
-          icon={<CircleDollarSign size={24} className="text-white" />}
-          color="bg-emerald-600"
-        />
-
-        <StatCard
-          title="Pending"
-          value={analytics.pending}
-          icon={<Clock3 size={24} className="text-white" />}
-          color="bg-amber-500"
-        />
-
-        <StatCard
-          title="Confirmed"
-          value={analytics.confirmed}
-          icon={<BadgeCheck size={24} className="text-white" />}
-          color="bg-green-600"
-        />
-
-        <StatCard
-          title="Cancelled"
-          value={analytics.cancelled}
-          icon={<CircleX size={24} className="text-white" />}
-          color="bg-red-600"
-        />
-      </div>
-
-      <div className="mb-8 rounded-3xl border border-stone-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold text-stone-800">
-          Revenue Trend
-        </h2>
-
-        <RevenueChart
-          data={
-            chartData as {
-              date: string;
-              revenue: number;
-            }[]
-          }
-        />
-      </div>
-
-      <div className="mb-8">
-        <RecentBookings bookings={bookingList} />
-      </div>
-
-      <AdminTable
-        bookings={bookingList}
-        currentPage={page}
-        totalPages={Math.ceil((count ?? 0) / PAGE_SIZE)}
-        search={q}
-        status={status}
-      />
-    </div>
-  </main>
-);
+    </main>
+  );
 }

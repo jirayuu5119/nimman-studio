@@ -14,14 +14,14 @@ export default function StatCard({
   color,
 }: Props) {
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:shadow-md">
+    <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm transition hover:shadow-md">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-neutral-500">
+          <p className="text-sm font-medium text-stone-500">
             {title}
           </p>
 
-          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-neutral-900">
+          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-stone-900">
             {value}
           </h2>
         </div>
