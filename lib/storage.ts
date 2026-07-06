@@ -7,7 +7,7 @@ export async function uploadSlip(file: File) {
     .toString(36)
     .substring(2)}.${ext}`;
 
-  const path = `slips/${fileName}`;
+  const path = fileName;
 
   const { error } = await supabase.storage
     .from("slips")
