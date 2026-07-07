@@ -76,6 +76,21 @@ on public.bookings (booking_date);
 create index if not exists idx_status
 on public.bookings (status);
 
+create table if not exists public.blocked_slots (
+    id uuid primary key default gen_random_uuid(),
+    booking_date date not null,
+    period text not null check (period in ('morning', 'afternoon')),
+    reason text,
+    created_at timestamptz not null default now(),
+    unique (booking_date, period)
+);
+
+create index if not exists idx_blocked_slots_booking_date
+on public.blocked_slots (booking_date);
+
+alter table public.blocked_slots
+enable row level security;
+
 alter table public.bookings
 enable row level security;
 

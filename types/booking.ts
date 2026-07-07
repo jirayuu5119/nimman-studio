@@ -69,3 +69,19 @@ export type Booking = {
   created_at: string;
   updated_at?: string;
 };
+
+export type BlockedSlot = {
+  id: string;
+  booking_date: string;
+  period: BookingPeriod;
+  reason: string | null;
+  created_at: string;
+};
+
+export type AvailabilitySlot = {
+  booking_date: string;
+  period: BookingPeriod;
+  status: BookingStatus | "blocked";
+  source?: "booking" | "blocked";
+  reason?: string | null;
+};
