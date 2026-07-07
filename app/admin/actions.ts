@@ -14,7 +14,7 @@ function createAdminClient() {
 
 export async function updateBookingStatus(
   id: string,
-  status: "confirmed" | "cancelled"
+  status: "confirmed" | "cancelled" | "completed"
 ) {
   const supabase = createAdminClient();
 
