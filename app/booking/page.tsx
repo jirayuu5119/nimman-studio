@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useBooking } from "@/context/BookingContext";
 import Calendar from "@/components/Calendar";
@@ -75,12 +76,23 @@ export default function BookingPage() {
       <div className="mx-auto max-w-6xl">
         <div className="mb-10 text-center">
           <p className="text-xs font-medium uppercase tracking-[0.35em] text-stone-400">
-            Nimman Foto Booking
-          </p>
+  GRADUATION PHOTOGRAPHY
+</p>
 
-          <h1 className="mt-4 font-serif text-4xl font-semibold tracking-tight text-stone-900 md:text-5xl">
-            จองคิวถ่ายภาพรับปริญญา
-          </h1>
+<div className="mt-5 flex justify-center">
+  <Image
+    src="/nimman-logo.png"
+    alt="Nimman Foto"
+    width={420}
+    height={160}
+    priority
+    className="h-auto w-[280px] md:w-[420px]"
+  />
+</div>
+
+<h1 className="mt-6 font-serif text-3xl font-semibold tracking-tight text-stone-900 md:text-4xl">
+  จองคิวถ่ายภาพรับปริญญา
+</h1>
 
           <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-stone-500 md:text-base">
             เลือกวันที่ รอบเวลา และแพ็กเกจที่ต้องการ

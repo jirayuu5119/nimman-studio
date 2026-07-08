@@ -10,29 +10,29 @@ export default function AdminGuard({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [checking, setChecking] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function checkUser() {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      if (!user) {
+      if (!session) {
         router.replace("/login");
         return;
       }
 
-      setChecking(false);
+      setLoading(false);
     }
 
     checkUser();
   }, [router]);
 
-  if (checking) {
+  if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center">
-        <p className="text-gray-500">กำลังตรวจสอบสิทธิ์...</p>
+        <p>Loading...</p>
       </main>
     );
   }
