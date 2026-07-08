@@ -76,10 +76,24 @@ const UNIVERSITY_NAMES = [
   "สถาบันการบินพลเรือน",
   "สถาบันดนตรีกัลยาณิวัฒนา",
   "สถาบันวิทยสิริเมธี",
-  "อื่น ๆ",
 ];
 
-export const UNIVERSITIES = UNIVERSITY_NAMES.map((name) => ({
+const NURSING_COLLEGE_NAMES = [
+  "มหาวิทยาลัยเชียงใหม่",
+  "มหาวิทยาลัยแม่โจ้",
+  "มหาวิทยาลัยราชภัฏเชียงใหม่",
+  "มหาวิทยาลัยพายัพ",
+];
+
+const ALL_UNIVERSITY_NAMES = [
+  ...new Set([
+    ...UNIVERSITY_NAMES,
+    ...NURSING_COLLEGE_NAMES,
+    "อื่น ๆ",
+  ]),
+];
+
+export const UNIVERSITIES = ALL_UNIVERSITY_NAMES.map((name) => ({
   name,
   faculties: COMMON_FACULTIES,
 }));
