@@ -31,6 +31,14 @@ const COMMON_FACULTIES = [
   "อื่น ๆ",
 ];
 
+const NURSING_FACULTIES = [
+  "คณะพยาบาลศาสตร์",
+  "คณะสาธารณสุขศาสตร์",
+  "คณะวิทยาศาสตร์สุขภาพ",
+  "คณะเทคนิคการแพทย์",
+  "อื่น ๆ",
+];
+
 const UNIVERSITY_NAMES = [
   "จุฬาลงกรณ์มหาวิทยาลัย",
   "มหาวิทยาลัยธรรมศาสตร์",
@@ -79,10 +87,12 @@ const UNIVERSITY_NAMES = [
 ];
 
 const NURSING_COLLEGE_NAMES = [
-  "มหาวิทยาลัยเชียงใหม่",
-  "มหาวิทยาลัยแม่โจ้",
-  "มหาวิทยาลัยราชภัฏเชียงใหม่",
-  "มหาวิทยาลัยพายัพ",
+  "วิทยาลัยพยาบาลบรมราชชนนี กรุงเทพ",
+  "วิทยาลัยพยาบาลบรมราชชนนี จักรีรัช",
+  "วิทยาลัยพยาบาลบรมราชชนนี ชลบุรี",
+  "วิทยาลัยพยาบาลบรมราชชนนี นพรัตน์วชิระ",
+  "วิทยาลัยพยาบาลบรมราชชนนี สระบุรี",
+  "วิทยาลัยพยาบาลบรมราชชนนี สุพรรณบุรี",
 ];
 
 const ALL_UNIVERSITY_NAMES = [
@@ -95,5 +105,7 @@ const ALL_UNIVERSITY_NAMES = [
 
 export const UNIVERSITIES = ALL_UNIVERSITY_NAMES.map((name) => ({
   name,
-  faculties: COMMON_FACULTIES,
+  faculties: NURSING_COLLEGE_NAMES.includes(name)
+    ? NURSING_FACULTIES
+    : COMMON_FACULTIES,
 }));
