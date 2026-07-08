@@ -13,6 +13,30 @@ export default function BookingInfoPage() {
   const selectedUniversity = UNIVERSITIES.find(
     (u) => u.name === booking.university
   );
+  const defaultFaculties = UNIVERSITIES[0]?.faculties ?? [];
+  const facultyOptions = selectedUniversity
+    ? selectedUniversity.faculties
+    : booking.faculty.trim()
+    ? [
+        booking.faculty,
+        ...defaultFaculties.filter(
+          (faculty) => faculty !== booking.faculty
+        ),
+      ]
+    : defaultFaculties;
+  const universityOptions = selectedUniversity
+    ? UNIVERSITIES
+    : booking.university.trim()
+    ? [
+        {
+          name: booking.university,
+          faculties: facultyOptions,
+        },
+        ...UNIVERSITIES.filter(
+          (university) => university.name !== booking.university
+        ),
+      ]
+    : UNIVERSITIES;
 
   const canNext =
     booking.fullname.trim() !== "" &&
@@ -120,7 +144,7 @@ export default function BookingInfoPage() {
               >
                 <option value="">เลือกมหาวิทยาลัย</option>
 
-                {UNIVERSITIES.map((university) => (
+                {universityOptions.map((university) => (
                   <option key={university.name} value={university.name}>
                     {university.name}
                   </option>
@@ -134,12 +158,12 @@ export default function BookingInfoPage() {
                 name="faculty"
                 value={booking.faculty}
                 onChange={handleChange}
-                disabled={!selectedUniversity}
+                disabled={!booking.university.trim()}
                 className={`${inputClass} disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400`}
               >
                 <option value="">เลือกคณะ</option>
 
-                {selectedUniversity?.faculties.map((faculty) => (
+                {facultyOptions.map((faculty) => (
                   <option key={faculty} value={faculty}>
                     {faculty}
                   </option>

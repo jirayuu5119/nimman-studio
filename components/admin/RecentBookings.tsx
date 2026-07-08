@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Booking } from "@/types/booking";
-import StatusBadge from "./StatusBadge";
+import StatusBadge from "@/app/admin/StatusBadge";
 
 type Props = {
   bookings: Booking[];
