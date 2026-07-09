@@ -15,11 +15,16 @@ import {
 } from "lucide-react";
 
 import { useBooking } from "@/context/BookingContext";
-import { uploadSlip } from "@/lib/storage";
-import { generateBookingNo } from "@/lib/booking";
-import { createBooking } from "@/lib/database";
 
 const DEPOSIT_AMOUNT = 1000;
+
+function formatDateLocal(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
 
 export default function UploadSlipPage() {
   const router = useRouter();
@@ -89,30 +94,46 @@ export default function UploadSlipPage() {
     try {
       setLoading(true);
 
-      const slipUrl = await uploadSlip(file);
-      const bookingNo = generateBookingNo();
+      const formData = new FormData();
 
-      const result = await createBooking(bookingNo, {
-        ...booking,
-        depositAmount,
-        remainingAmount,
-        slipUrl,
-        status: "pending",
+      formData.append("slip", file);
+      formData.append("bookingDate", formatDateLocal(booking.date));
+      formData.append("period", booking.period);
+      formData.append("startTime", booking.startTime);
+      formData.append("endTime", booking.endTime);
+      formData.append("hours", String(booking.hours));
+      formData.append("graduates", String(booking.graduates));
+      formData.append("fullname", booking.fullname);
+      formData.append("phone", booking.phone);
+      formData.append("line", booking.line);
+      formData.append("facebook", booking.facebook);
+      formData.append("university", booking.university);
+      formData.append("faculty", booking.faculty);
+      formData.append("note", booking.note);
+      formData.append("totalPrice", String(totalPrice));
+
+      const response = await fetch("/api/bookings/create", {
+        method: "POST",
+        body: formData,
       });
 
-      if (!result) {
-        throw new Error("บันทึกการจองไม่สำเร็จ กรุณาลองใหม่");
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.error ?? "บันทึกการจองไม่สำเร็จ กรุณาลองใหม่"
+        );
       }
 
       setBooking((prev) => ({
         ...prev,
         depositAmount,
-        remainingAmount,
-        slipUrl,
+        remainingAmount: result.remainingAmount ?? remainingAmount,
+        slipUrl: result.slipUrl ?? "",
         status: "pending",
       }));
 
-      router.push(`/booking/success?bookingNo=${bookingNo}`);
+      router.push(`/booking/success?bookingNo=${result.bookingNo}`);
     } catch (error) {
       console.error("BOOKING ERROR:", error);
 
