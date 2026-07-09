@@ -35,6 +35,11 @@ function displayTime(b: Booking) {
   return b.period === "morning" ? "รอบเช้า" : "รอบบ่าย";
 }
 
+function escapeCsvCell(value: string | number | null | undefined) {
+  const text = String(value ?? "");
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
 export default function AdminTable({
   bookings,
   currentPage,
@@ -97,7 +102,10 @@ export default function AdminTable({
       "Date",
       "Time",
       "Total Price",
+      "Deposit Amount",
+      "Remaining Amount",
       "Status",
+      "Slip URL",
     ];
 
     const rows = bookings.map((b) => [
@@ -107,12 +115,16 @@ export default function AdminTable({
       b.booking_date,
       displayTime(b),
       b.total_price ?? 0,
+      b.deposit_amount ?? 0,
+      b.remaining_amount ?? 0,
       b.status,
+      b.slip_url ?? "",
     ]);
 
-    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join(
-      "\n"
-    );
+    const csv = [
+      headers.map(escapeCsvCell).join(","),
+      ...rows.map((r) => r.map(escapeCsvCell).join(",")),
+    ].join("\n");
 
     const blob = new Blob([csv], {
       type: "text/csv;charset=utf-8;",
@@ -136,7 +148,10 @@ export default function AdminTable({
       Date: b.booking_date,
       Time: displayTime(b),
       "Total Price": b.total_price ?? 0,
+      "Deposit Amount": b.deposit_amount ?? 0,
+      "Remaining Amount": b.remaining_amount ?? 0,
       Status: b.status,
+      "Slip URL": b.slip_url ?? "",
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);

@@ -16,6 +16,31 @@ import {
 } from "lucide-react";
 
 const PAGE_SIZE = 10;
+const REVENUE_STATUSES = ["paid", "confirmed", "completed"];
+
+type AnalyticsBooking = {
+  status: string | null;
+  total_price: number | null;
+  booking_date: string | null;
+};
+
+function getBangkokDateParts(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const year = parts.find((part) => part.type === "year")?.value ?? "";
+  const month = parts.find((part) => part.type === "month")?.value ?? "";
+  const day = parts.find((part) => part.type === "day")?.value ?? "";
+
+  return {
+    dateKey: `${year}-${month}-${day}`,
+    monthKey: `${year}-${month}`,
+  };
+}
 
 export default async function AdminPage({
   searchParams,
@@ -62,12 +87,15 @@ export default async function AdminPage({
 
   const { data: allBookings } = await supabase
     .from("bookings")
-    .select("status,total_price,created_at")
-    .limit(2000);
+    .select("status,total_price,booking_date")
+    .order("booking_date", { ascending: true })
+    .range(0, 9999);
+
+  const analyticsBookings = (allBookings ?? []) as AnalyticsBooking[];
 
   const analytics = {
     totalRevenue: 0,
-    totalBookings: allBookings?.length ?? 0,
+    totalBookings: analyticsBookings.length,
     pending: 0,
     paid: 0,
     confirmed: 0,
@@ -77,17 +105,13 @@ export default async function AdminPage({
     thisMonth: 0,
   };
 
-  const now = new Date();
-  const todayStr = now.toDateString();
+  const { dateKey: todayKey, monthKey: thisMonthKey } =
+    getBangkokDateParts(new Date());
 
-  (allBookings ?? []).forEach((b) => {
-    const createdAt = new Date(b.created_at);
+  analyticsBookings.forEach((b) => {
+    const bookingDate = b.booking_date ?? "";
 
-    if (
-      b.status === "paid" ||
-      b.status === "confirmed" ||
-      b.status === "completed"
-    ) {
+    if (b.status && REVENUE_STATUSES.includes(b.status)) {
       analytics.totalRevenue += b.total_price ?? 0;
     }
 
@@ -97,14 +121,11 @@ export default async function AdminPage({
     if (b.status === "completed") analytics.completed++;
     if (b.status === "cancelled") analytics.cancelled++;
 
-    if (createdAt.toDateString() === todayStr) {
+    if (bookingDate === todayKey) {
       analytics.today++;
     }
 
-    if (
-      createdAt.getMonth() === now.getMonth() &&
-      createdAt.getFullYear() === now.getFullYear()
-    ) {
+    if (bookingDate.startsWith(thisMonthKey)) {
       analytics.thisMonth++;
     }
   });
@@ -115,8 +136,12 @@ export default async function AdminPage({
   };
 
   const chartData = Object.values(
-    (allBookings ?? []).reduce<Record<string, ChartItem>>((acc, b) => {
-      const date = new Date(b.created_at).toISOString().split("T")[0];
+    analyticsBookings.reduce<Record<string, ChartItem>>((acc, b) => {
+      const date = b.booking_date;
+
+      if (!date) {
+        return acc;
+      }
 
       if (!acc[date]) {
         acc[date] = {
@@ -125,11 +150,7 @@ export default async function AdminPage({
         };
       }
 
-      if (
-        b.status === "paid" ||
-        b.status === "confirmed" ||
-        b.status === "completed"
-      ) {
+      if (b.status && REVENUE_STATUSES.includes(b.status)) {
         acc[date].revenue += b.total_price ?? 0;
       }
 
@@ -181,7 +202,7 @@ export default async function AdminPage({
 
         <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
           <StatCard
-            title="Today's Booking"
+            title="Today Shoots"
             value={analytics.today}
             icon={<CalendarDays size={22} className="text-white" />}
             color="bg-stone-900"

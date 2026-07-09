@@ -24,20 +24,6 @@ export default function BookingInfoPage() {
         ),
       ]
     : defaultFaculties;
-  const universityOptions = selectedUniversity
-    ? UNIVERSITIES
-    : booking.university.trim()
-    ? [
-        {
-          name: booking.university,
-          faculties: facultyOptions,
-        },
-        ...UNIVERSITIES.filter(
-          (university) => university.name !== booking.university
-        ),
-      ]
-    : UNIVERSITIES;
-
   const canNext =
     booking.fullname.trim() !== "" &&
     booking.phone.trim() !== "" &&
@@ -136,20 +122,19 @@ export default function BookingInfoPage() {
 
             <div>
               <label className={labelClass}>มหาวิทยาลัย *</label>
-              <select
+              <input
                 name="university"
+                list="university-options"
                 value={booking.university}
                 onChange={handleChange}
+                placeholder="พิมพ์เพื่อค้นหามหาวิทยาลัย / วิทยาลัยพยาบาล"
                 className={inputClass}
-              >
-                <option value="">เลือกมหาวิทยาลัย</option>
-
-                {universityOptions.map((university) => (
-                  <option key={university.name} value={university.name}>
-                    {university.name}
-                  </option>
+              />
+              <datalist id="university-options">
+                {UNIVERSITIES.map((university) => (
+                  <option key={university.name} value={university.name} />
                 ))}
-              </select>
+              </datalist>
             </div>
 
             <div>

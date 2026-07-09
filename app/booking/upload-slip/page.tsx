@@ -9,6 +9,9 @@ import {
   CheckCircle2,
   Loader2,
   ImagePlus,
+  Copy,
+  Check,
+  CreditCard,
 } from "lucide-react";
 
 import { useBooking } from "@/context/BookingContext";
@@ -24,6 +27,9 @@ export default function UploadSlipPage() {
 
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const realPromptPayNumber = "8302376723";
 
   const depositAmount = booking.depositAmount ?? DEPOSIT_AMOUNT;
   const totalPrice = booking.totalPrice ?? 0;
@@ -40,6 +46,15 @@ export default function UploadSlipPage() {
       if (preview) URL.revokeObjectURL(preview);
     };
   }, [preview]);
+
+  const copyPromptPay = async () => {
+    await navigator.clipboard.writeText(realPromptPayNumber);
+    setCopied(true);
+
+    setTimeout(() => {
+      setCopied(false);
+    }, 1800);
+  };
 
   const handleFile = (e: ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
@@ -116,7 +131,7 @@ export default function UploadSlipPage() {
       <div className="mx-auto max-w-4xl">
         <div className="mb-10 text-center">
           <p className="text-xs font-medium uppercase tracking-[0.35em] text-stone-400">
-            Step 05
+            Step 04
           </p>
 
           <h1 className="mt-4 font-serif text-4xl font-semibold tracking-tight text-stone-900 md:text-5xl">
@@ -183,6 +198,59 @@ export default function UploadSlipPage() {
             </section>
 
             <section className="space-y-5">
+              <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50/70 p-5 md:p-6">
+                <div className="mb-5 flex items-start gap-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-stone-700">
+                    <CreditCard size={22} />
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-[0.25em] text-stone-400">
+                      PromptPay QR
+                    </p>
+
+                    <h2 className="mt-2 text-lg font-semibold text-stone-900">
+                      ชำระมัดจำก่อนอัปโหลดสลิป
+                    </h2>
+                  </div>
+                </div>
+
+                <div className="mx-auto max-w-[260px] rounded-[1.25rem] border border-stone-200 bg-white p-3">
+                  <Image
+                    src="/promptpay-qr.png"
+                    alt="PromptPay QR"
+                    width={320}
+                    height={320}
+                    priority
+                    className="h-auto w-full rounded-xl"
+                  />
+                </div>
+
+                <div className="mt-5 flex flex-col gap-3 rounded-2xl border border-stone-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-[0.2em] text-stone-400">
+                      PromptPay
+                    </p>
+                    <p className="mt-1 font-serif text-2xl font-semibold tracking-wide text-stone-900">
+                      {realPromptPayNumber}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={copyPromptPay}
+                    className={`inline-flex items-center justify-center gap-2 rounded-full border px-4 py-3 text-sm font-semibold transition ${
+                      copied
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : "border-stone-300 bg-white text-stone-700 hover:border-stone-900"
+                    }`}
+                  >
+                    {copied ? <Check size={17} /> : <Copy size={17} />}
+                    {copied ? "คัดลอกแล้ว" : "คัดลอก"}
+                  </button>
+                </div>
+              </div>
+
               <div className="rounded-[1.5rem] border border-stone-200 bg-stone-900 p-5 text-white md:p-6">
                 <div className="flex items-start gap-4">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10">

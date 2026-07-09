@@ -47,7 +47,7 @@ export default function BookingSummaryPage() {
       remainingAmount,
     }));
 
-    router.push("/booking/payment");
+    router.push("/booking/upload-slip");
   };
 
   return (
@@ -250,7 +250,7 @@ export default function BookingSummaryPage() {
               onClick={handleConfirm}
               className="rounded-full border border-stone-900 bg-stone-900 px-6 py-4 text-sm font-semibold tracking-[0.12em] text-white transition hover:bg-white hover:text-stone-900"
             >
-              ไปชำระมัดจำ →
+              ชำระมัดจำและอัปโหลดสลิป →
             </button>
           </div>
         </div>
