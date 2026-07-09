@@ -2,6 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
+import { saveSiteSettings } from "@/lib/siteSettings";
 
 type BookingPeriod = "morning" | "afternoon";
 
@@ -77,21 +78,13 @@ export async function updatePortfolioLinks(formData: FormData) {
   const facebookUrl = normalizeUrl(formData.get("facebookUrl"));
   const supabase = createAdminClient();
 
-  const { error } = await supabase.from("site_settings").upsert(
+  await saveSiteSettings(
     {
-      id: 1,
       instagram_url: instagramUrl,
       facebook_url: facebookUrl,
-      updated_at: new Date().toISOString(),
     },
-    {
-      onConflict: "id",
-    }
+    supabase
   );
-
-  if (error) {
-    throw error;
-  }
 
   revalidatePath("/admin");
   revalidatePath("/booking");

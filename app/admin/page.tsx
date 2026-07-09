@@ -6,6 +6,7 @@ import StatCard from "./StatCard";
 import RevenueChart from "./RevenueChart";
 import { createClient } from "@supabase/supabase-js";
 import AdminTable from "./AdminTable";
+import { getSiteSettings, type SiteSettings } from "@/lib/siteSettings";
 import { Booking } from "@/types/booking";
 import {
   CalendarDays,
@@ -26,11 +27,6 @@ type AnalyticsBooking = {
   status: string | null;
   total_price: number | null;
   booking_date: string | null;
-};
-
-type SiteSettings = {
-  instagram_url: string | null;
-  facebook_url: string | null;
 };
 
 function getBangkokDateParts(date: Date) {
@@ -97,18 +93,14 @@ export default async function AdminPage({
     Date.now() - 24 * 60 * 60 * 1000
   ).toISOString();
 
-  const [allBookingsResult, siteSettingsResult, bookingViewsResult] =
+  const [allBookingsResult, siteSettings, bookingViewsResult] =
     await Promise.all([
       supabase
         .from("bookings")
         .select("status,total_price,booking_date")
         .order("booking_date", { ascending: true })
         .range(0, 9999),
-      supabase
-        .from("site_settings")
-        .select("instagram_url, facebook_url")
-        .eq("id", 1)
-        .maybeSingle(),
+      getSiteSettings(supabase),
       supabase
         .from("page_views")
         .select("id", { count: "exact", head: true })
@@ -120,19 +112,12 @@ export default async function AdminPage({
     throw allBookingsResult.error;
   }
 
-  if (siteSettingsResult.error) {
-    console.error("Site settings query error:", siteSettingsResult.error);
-  }
-
   if (bookingViewsResult.error) {
     console.error("Page views query error:", bookingViewsResult.error);
   }
 
   const analyticsBookings = (allBookingsResult.data ?? []) as AnalyticsBooking[];
-  const siteSettings = (siteSettingsResult.data ?? {
-    instagram_url: "",
-    facebook_url: "",
-  }) as SiteSettings;
+  const siteSettingsData = siteSettings as SiteSettings;
   const bookingViews24h = bookingViewsResult.count ?? 0;
 
   const analytics = {
@@ -330,7 +315,7 @@ export default async function AdminPage({
               </label>
               <input
                 name="instagramUrl"
-                defaultValue={siteSettings.instagram_url ?? ""}
+                defaultValue={siteSettingsData.instagram_url ?? ""}
                 placeholder="https://www.instagram.com/..."
                 className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-stone-900 focus:bg-white"
               />
@@ -342,7 +327,7 @@ export default async function AdminPage({
               </label>
               <input
                 name="facebookUrl"
-                defaultValue={siteSettings.facebook_url ?? ""}
+                defaultValue={siteSettingsData.facebook_url ?? ""}
                 placeholder="https://www.facebook.com/..."
                 className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-stone-900 focus:bg-white"
               />
