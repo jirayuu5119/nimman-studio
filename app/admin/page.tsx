@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ChangePasswordForm from "@/components/admin/ChangePasswordForm";
 import LogoutButton from "@/components/admin/LogoutButton";
 import { updatePortfolioLinks } from "./actions";
 import RecentBookings from "./RecentBookings";
@@ -342,6 +343,8 @@ export default async function AdminPage({
             </button>
           </form>
         </div>
+
+        <ChangePasswordForm />
 
         <div className="mb-8 rounded-[2rem] border border-stone-200/80 bg-white/90 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.06)] backdrop-blur md:p-6">
           <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">

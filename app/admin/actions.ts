@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { saveSiteSettings } from "@/lib/siteSettings";
 
 type BookingPeriod = "morning" | "afternoon";
+const ACTIVE_BOOKING_STATUSES = ["pending", "paid", "confirmed", "completed"];
 
 function createAdminClient() {
   return createClient(
@@ -54,6 +55,51 @@ export async function blockCalendarSlot(formData: FormData) {
 
   if (error && error.code !== "23505") {
     throw error;
+  }
+
+  revalidatePath("/admin/calendar");
+}
+
+export async function blockCalendarDay(formData: FormData) {
+  const bookingDate = String(formData.get("bookingDate") ?? "");
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(bookingDate)) {
+    throw new Error("Invalid booking date");
+  }
+
+  const supabase = createAdminClient();
+
+  const { data: bookings, error: bookingsError } = await supabase
+    .from("bookings")
+    .select("period")
+    .eq("booking_date", bookingDate)
+    .in("status", ACTIVE_BOOKING_STATUSES);
+
+  if (bookingsError) {
+    throw bookingsError;
+  }
+
+  const bookedPeriods = new Set(
+    (bookings ?? []).map((booking) => booking.period as BookingPeriod)
+  );
+
+  const slotsToBlock = (["morning", "afternoon"] as BookingPeriod[])
+    .filter((period) => !bookedPeriods.has(period))
+    .map((period) => ({
+      booking_date: bookingDate,
+      period,
+      reason: "Closed full day from admin calendar",
+    }));
+
+  if (slotsToBlock.length > 0) {
+    const { error } = await supabase.from("blocked_slots").upsert(slotsToBlock, {
+      onConflict: "booking_date,period",
+      ignoreDuplicates: true,
+    });
+
+    if (error) {
+      throw error;
+    }
   }
 
   revalidatePath("/admin/calendar");

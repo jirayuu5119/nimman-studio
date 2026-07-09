@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
-import { blockCalendarSlot } from "@/app/admin/actions";
+import { blockCalendarDay, blockCalendarSlot } from "@/app/admin/actions";
 import type { BlockedSlot, Booking, BookingPeriod } from "@/types/booking";
 
 function formatDateLocal(date: Date) {
@@ -84,6 +84,31 @@ function BlockSlotButton({
         }`}
       >
         {disabledLabel ?? `ปิดรอบ${getPeriodLabel(period)}`}
+      </button>
+    </form>
+  );
+}
+
+function BlockFullDayButton({
+  dateKey,
+  disabled,
+}: {
+  dateKey: string;
+  disabled: boolean;
+}) {
+  return (
+    <form action={blockCalendarDay}>
+      <input type="hidden" name="bookingDate" value={dateKey} />
+      <button
+        type="submit"
+        disabled={disabled}
+        className={`w-full rounded-full border px-3 py-2 text-[11px] font-semibold transition ${
+          disabled
+            ? "cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400"
+            : "border-red-200 bg-red-50 text-red-700 hover:border-red-700 hover:bg-red-700 hover:text-white"
+        }`}
+      >
+        {disabled ? "ปิดครบทั้งวันแล้ว" : "ปิดคิวทั้งวัน"}
       </button>
     </form>
   );
@@ -298,6 +323,10 @@ export default async function AdminCalendarPage({
                   </div>
 
                   <div className="mt-3 grid gap-2">
+                    <BlockFullDayButton
+                      dateKey={dateKey}
+                      disabled={hasMorning && hasAfternoon}
+                    />
                     <BlockSlotButton
                       dateKey={dateKey}
                       period="morning"

@@ -118,19 +118,19 @@ export default async function BookingDetail({
   async function approve() {
     "use server";
     await updateBookingStatus(id, "confirmed");
-    redirect(`/admin/bookings/${id}`);
+    redirect("/admin");
   }
 
   async function complete() {
     "use server";
     await updateBookingStatus(id, "completed");
-    redirect(`/admin/bookings/${id}`);
+    redirect("/admin");
   }
 
   async function reject() {
     "use server";
     await updateBookingStatus(id, "cancelled");
-    redirect(`/admin/bookings/${id}`);
+    redirect("/admin");
   }
 
   return (
