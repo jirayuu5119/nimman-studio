@@ -24,9 +24,9 @@ export default function Home() {
             </div>
 
             <p className="mx-auto mt-6 max-w-sm text-sm leading-7 text-stone-500">
-              ระบบจองคิวถ่ายภาพรับปริญญา
+              ระบบจองคิวถ่ายภาพวันสำคัญ
               <br />
-              เรียบง่าย ชัดเจน และเป็นส่วนตัว
+              รับปริญญา · รับทรานสคริป · จบพยาบาล
             </p>
           </div>
 

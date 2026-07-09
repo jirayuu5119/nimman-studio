@@ -28,7 +28,7 @@ export default function RecentBookings({ bookings }: Props) {
       <div className="flex items-center justify-between border-b border-neutral-100 p-5">
         <div>
           <h2 className="text-lg font-semibold tracking-tight text-neutral-900">
-            Recent Bookings
+            รายการจองล่าสุด
           </h2>
 
           <p className="mt-1 text-sm text-neutral-500">
@@ -75,7 +75,7 @@ export default function RecentBookings({ bookings }: Props) {
                 href={`/admin/bookings/${b.id}`}
                 className="inline-flex w-full items-center justify-center rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-700 sm:w-auto"
               >
-                View
+                ดูรายละเอียด
               </Link>
             </div>
           ))}

@@ -7,7 +7,13 @@ import { useBooking } from "@/context/BookingContext";
 import Calendar from "@/components/Calendar";
 import HourSelector from "@/components/HourSelector";
 import GraduateSelector from "@/components/GraduateSelector";
-import { CalendarDays, Sunrise, Sunset } from "lucide-react";
+import {
+  CalendarDays,
+  Camera,
+  Share2,
+  Sunrise,
+  Sunset,
+} from "lucide-react";
 import { PACKAGES } from "@/lib/packages";
 import { getTimeSlots } from "@/lib/timeSlots";
 
@@ -15,6 +21,11 @@ type BookedSlot = {
   booking_date: string;
   period: "morning" | "afternoon";
   status: string;
+};
+
+type SiteSettings = {
+  instagramUrl: string;
+  facebookUrl: string;
 };
 
 function formatDateLocal(date: Date) {
@@ -30,6 +41,10 @@ export default function BookingPage() {
   const { booking, setBooking } = useBooking();
 
   const [bookedSlots, setBookedSlots] = useState<BookedSlot[]>([]);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>({
+    instagramUrl: "",
+    facebookUrl: "",
+  });
 
   useEffect(() => {
     async function fetchAvailability() {
@@ -39,6 +54,24 @@ export default function BookingPage() {
     }
 
     fetchAvailability();
+  }, []);
+
+  useEffect(() => {
+    async function fetchSiteSettings() {
+      const res = await fetch("/api/site-settings");
+      const data = await res.json();
+
+      setSiteSettings({
+        instagramUrl: data.instagramUrl ?? "",
+        facebookUrl: data.facebookUrl ?? "",
+      });
+    }
+
+    fetchSiteSettings();
+    fetch("/api/page-views/booking", {
+      method: "POST",
+      keepalive: true,
+    }).catch(() => {});
   }, []);
 
   const packageInfo = PACKAGES[booking.hours];
@@ -91,14 +124,41 @@ export default function BookingPage() {
 </div>
 
 <h1 className="mt-6 font-serif text-3xl font-semibold tracking-tight text-stone-900 md:text-4xl">
-  จองคิวถ่ายภาพรับปริญญา
+  จองคิวถ่ายภาพ
 </h1>
 
           <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-stone-500 md:text-base">
-            เลือกวันที่ รอบเวลา และแพ็กเกจที่ต้องการ
+            วันซ้อม / วันจริง / นอกรอบ / รับทรานสคริป เลือกวันที่ รอบเวลา และแพ็กเกจที่ต้องการ
             <br className="hidden md:block" />
             ระบบจะแสดงวันว่างและรอบที่จองได้แบบอัตโนมัติ
           </p>
+          {(siteSettings.instagramUrl || siteSettings.facebookUrl) && (
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              {siteSettings.instagramUrl && (
+                <a
+                  href={siteSettings.instagramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-900 hover:bg-stone-50"
+                >
+                  <Camera size={17} />
+                  ชมผลงาน IG
+                </a>
+              )}
+
+              {siteSettings.facebookUrl && (
+                <a
+                  href={siteSettings.facebookUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-900 hover:bg-stone-50"
+                >
+                  <Share2 size={17} />
+                  ชมผลงาน Facebook
+                </a>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="rounded-[2rem] border border-stone-200/80 bg-white/90 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.06)] backdrop-blur md:p-10">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import LogoutButton from "@/components/admin/LogoutButton";
+import { updatePortfolioLinks } from "./actions";
 import RecentBookings from "./RecentBookings";
 import StatCard from "./StatCard";
 import RevenueChart from "./RevenueChart";
@@ -13,6 +14,9 @@ import {
   Clock3,
   BadgeCheck,
   CircleX,
+  ExternalLink,
+  Eye,
+  Link2,
 } from "lucide-react";
 
 const PAGE_SIZE = 10;
@@ -22,6 +26,11 @@ type AnalyticsBooking = {
   status: string | null;
   total_price: number | null;
   booking_date: string | null;
+};
+
+type SiteSettings = {
+  instagram_url: string | null;
+  facebook_url: string | null;
 };
 
 function getBangkokDateParts(date: Date) {
@@ -62,7 +71,7 @@ export default async function AdminPage({
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
   let query = supabase.from("bookings").select("*", {
@@ -84,14 +93,47 @@ export default async function AdminPage({
     .range(from, to);
 
   const bookingList = (bookings ?? []) as Booking[];
+  const bookingViewsSince = new Date(
+    Date.now() - 24 * 60 * 60 * 1000
+  ).toISOString();
 
-  const { data: allBookings } = await supabase
-    .from("bookings")
-    .select("status,total_price,booking_date")
-    .order("booking_date", { ascending: true })
-    .range(0, 9999);
+  const [allBookingsResult, siteSettingsResult, bookingViewsResult] =
+    await Promise.all([
+      supabase
+        .from("bookings")
+        .select("status,total_price,booking_date")
+        .order("booking_date", { ascending: true })
+        .range(0, 9999),
+      supabase
+        .from("site_settings")
+        .select("instagram_url, facebook_url")
+        .eq("id", 1)
+        .maybeSingle(),
+      supabase
+        .from("page_views")
+        .select("id", { count: "exact", head: true })
+        .eq("page", "booking")
+        .gte("created_at", bookingViewsSince),
+    ]);
 
-  const analyticsBookings = (allBookings ?? []) as AnalyticsBooking[];
+  if (allBookingsResult.error) {
+    throw allBookingsResult.error;
+  }
+
+  if (siteSettingsResult.error) {
+    console.error("Site settings query error:", siteSettingsResult.error);
+  }
+
+  if (bookingViewsResult.error) {
+    console.error("Page views query error:", bookingViewsResult.error);
+  }
+
+  const analyticsBookings = (allBookingsResult.data ?? []) as AnalyticsBooking[];
+  const siteSettings = (siteSettingsResult.data ?? {
+    instagram_url: "",
+    facebook_url: "",
+  }) as SiteSettings;
+  const bookingViews24h = bookingViewsResult.count ?? 0;
 
   const analytics = {
     totalRevenue: 0,
@@ -167,11 +209,11 @@ export default async function AdminPage({
         <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.35em] text-stone-400">
-              Nimman Foto Admin
+              ผู้ดูแลระบบ Nimman Foto
             </p>
 
             <h1 className="mt-4 font-serif text-4xl font-semibold tracking-tight text-stone-900 md:text-5xl">
-              Admin Dashboard
+              แดชบอร์ดผู้ดูแล
             </h1>
 
             <p className="mt-3 text-sm leading-6 text-stone-500">
@@ -180,6 +222,14 @@ export default async function AdminPage({
           </div>
 
           <div className="flex shrink-0 items-center gap-3">
+            <Link
+              href="/booking"
+              target="_blank"
+              className="inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-900"
+            >
+              <ExternalLink size={16} />
+              ดูหน้าเว็บจอง
+            </Link>
             <LogoutButton />
           </div>
         </div>
@@ -189,70 +239,134 @@ export default async function AdminPage({
             href="/admin"
             className="rounded-full border border-stone-900 bg-stone-900 px-5 py-3 text-sm font-semibold tracking-[0.08em] text-white transition hover:bg-white hover:text-stone-900"
           >
-            Bookings
+            รายการจอง
           </Link>
 
           <Link
             href="/admin/calendar"
             className="rounded-full border border-stone-200 bg-white px-5 py-3 text-sm font-semibold tracking-[0.08em] text-stone-700 transition hover:border-stone-900"
           >
-            Calendar
+            ปฏิทินคิว
           </Link>
         </div>
 
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
           <StatCard
-            title="Today Shoots"
+            title="งานวันนี้"
             value={analytics.today}
             icon={<CalendarDays size={22} className="text-white" />}
             color="bg-stone-900"
           />
 
           <StatCard
-            title="This Month"
+            title="งานเดือนนี้"
             value={analytics.thisMonth}
             icon={<CalendarRange size={22} className="text-white" />}
             color="bg-stone-800"
           />
 
           <StatCard
-            title="Revenue"
+            title="รายได้"
             value={`฿${analytics.totalRevenue.toLocaleString()}`}
             icon={<CircleDollarSign size={22} className="text-white" />}
             color="bg-emerald-700"
           />
 
           <StatCard
-            title="Pending"
+            title="รอตรวจสอบ"
             value={analytics.pending}
             icon={<Clock3 size={22} className="text-white" />}
             color="bg-amber-500"
           />
 
           <StatCard
-            title="Confirmed"
+            title="ยืนยันแล้ว"
             value={analytics.confirmed}
             icon={<BadgeCheck size={22} className="text-white" />}
             color="bg-green-700"
           />
 
           <StatCard
-            title="Cancelled"
+            title="ยกเลิก"
             value={analytics.cancelled}
             icon={<CircleX size={22} className="text-white" />}
             color="bg-rose-500"
           />
+
+          <StatCard
+            title="ผู้เข้าชม 24 ชม."
+            value={bookingViews24h}
+            icon={<Eye size={22} className="text-white" />}
+            color="bg-sky-700"
+          />
+        </div>
+
+        <div className="mb-8 rounded-[2rem] border border-stone-200/80 bg-white/90 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.06)] backdrop-blur md:p-6">
+          <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.25em] text-stone-400">
+                ลิงก์ผลงาน
+              </p>
+
+              <h2 className="mt-2 text-xl font-semibold text-stone-900">
+                ปุ่มชมผลงานบนหน้าเว็บจอง
+              </h2>
+            </div>
+
+            <Link
+              href="/booking"
+              target="_blank"
+              className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-900"
+            >
+              <ExternalLink size={17} />
+              เปิดหน้าเว็บจอง
+            </Link>
+          </div>
+
+          <form action={updatePortfolioLinks} className="grid gap-3 lg:grid-cols-[1fr_1fr_auto]">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-stone-700">
+                ลิงก์ Instagram
+              </label>
+              <input
+                name="instagramUrl"
+                defaultValue={siteSettings.instagram_url ?? ""}
+                placeholder="https://www.instagram.com/..."
+                className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-stone-900 focus:bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-stone-700">
+                ลิงก์ Facebook
+              </label>
+              <input
+                name="facebookUrl"
+                defaultValue={siteSettings.facebook_url ?? ""}
+                placeholder="https://www.facebook.com/..."
+                className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-stone-900 focus:bg-white"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="mt-7 inline-flex h-[46px] items-center justify-center gap-2 rounded-full border border-stone-900 bg-stone-900 px-6 text-sm font-semibold text-white transition hover:bg-white hover:text-stone-900"
+            >
+              <Link2 size={17} />
+              บันทึกลิงก์
+            </button>
+          </form>
         </div>
 
         <div className="mb-8 rounded-[2rem] border border-stone-200/80 bg-white/90 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.06)] backdrop-blur md:p-6">
           <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-xs font-medium uppercase tracking-[0.25em] text-stone-400">
-                Analytics
+                สถิติรายได้
               </p>
 
               <h2 className="mt-2 text-xl font-semibold text-stone-900">
-                Revenue Trend
+                แนวโน้มรายได้
               </h2>
             </div>
 
@@ -280,7 +394,7 @@ export default async function AdminPage({
         <div className="rounded-[2rem] border border-stone-200/80 bg-white/90 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.06)] backdrop-blur md:p-6">
           <div className="mb-6">
             <p className="text-xs font-medium uppercase tracking-[0.25em] text-stone-400">
-              Booking Management
+              จัดการรายการจอง
             </p>
 
             <h2 className="mt-2 text-xl font-semibold text-stone-900">

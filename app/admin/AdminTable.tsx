@@ -96,16 +96,16 @@ export default function AdminTable({
 
   const exportCSV = () => {
     const headers = [
-      "Booking No",
-      "Customer",
-      "Phone",
-      "Date",
-      "Time",
-      "Total Price",
-      "Deposit Amount",
-      "Remaining Amount",
-      "Status",
-      "Slip URL",
+      "เลขจอง",
+      "ลูกค้า",
+      "เบอร์โทร",
+      "วันที่",
+      "เวลา",
+      "ราคาเต็ม",
+      "มัดจำ",
+      "ยอดคงเหลือ",
+      "สถานะ",
+      "ลิงก์สลิป",
     ];
 
     const rows = bookings.map((b) => [
@@ -142,16 +142,16 @@ export default function AdminTable({
 
   const exportExcel = () => {
     const data = bookings.map((b) => ({
-      "Booking No": b.booking_no,
-      Customer: b.fullname,
-      Phone: b.phone,
-      Date: b.booking_date,
-      Time: displayTime(b),
-      "Total Price": b.total_price ?? 0,
-      "Deposit Amount": b.deposit_amount ?? 0,
-      "Remaining Amount": b.remaining_amount ?? 0,
-      Status: b.status,
-      "Slip URL": b.slip_url ?? "",
+      เลขจอง: b.booking_no,
+      ลูกค้า: b.fullname,
+      เบอร์โทร: b.phone,
+      วันที่: b.booking_date,
+      เวลา: displayTime(b),
+      ราคาเต็ม: b.total_price ?? 0,
+      มัดจำ: b.deposit_amount ?? 0,
+      ยอดคงเหลือ: b.remaining_amount ?? 0,
+      สถานะ: b.status,
+      ลิงก์สลิป: b.slip_url ?? "",
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -194,13 +194,13 @@ export default function AdminTable({
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="paid">Paid</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="draft">Draft</option>
+            <option value="all">ทุกสถานะ</option>
+            <option value="pending">รอตรวจสอบ</option>
+            <option value="paid">ชำระแล้ว</option>
+            <option value="confirmed">ยืนยันแล้ว</option>
+            <option value="completed">เสร็จสิ้น</option>
+            <option value="cancelled">ยกเลิก</option>
+            <option value="draft">แบบร่าง</option>
           </select>
 
           <button
@@ -236,7 +236,7 @@ export default function AdminTable({
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="text-xs font-medium uppercase tracking-[0.18em] text-stone-400">
-                      Booking
+                      เลขจอง
                     </div>
 
                     <div className="mt-1 font-semibold text-stone-900">
@@ -249,7 +249,7 @@ export default function AdminTable({
 
                 <div className="mt-5 space-y-3 text-sm">
                   <div>
-                    <div className="text-xs text-stone-400">Customer</div>
+                    <div className="text-xs text-stone-400">ลูกค้า</div>
                     <div className="mt-1 font-medium text-stone-900">
                       {b.fullname}
                     </div>
@@ -289,13 +289,13 @@ export default function AdminTable({
           <table className="w-full min-w-[950px] text-sm">
             <thead className="border-b border-stone-200 bg-stone-50/80 text-stone-500">
               <tr>
-                <th className="px-5 py-4 text-left font-medium">Booking</th>
-                <th className="px-5 py-4 text-left font-medium">Customer</th>
-                <th className="px-5 py-4 text-left font-medium">Phone</th>
-                <th className="px-5 py-4 text-left font-medium">Date</th>
-                <th className="px-5 py-4 text-left font-medium">Time</th>
-                <th className="px-5 py-4 text-left font-medium">Status</th>
-                <th className="px-5 py-4 text-center font-medium">Action</th>
+                <th className="px-5 py-4 text-left font-medium">เลขจอง</th>
+                <th className="px-5 py-4 text-left font-medium">ลูกค้า</th>
+                <th className="px-5 py-4 text-left font-medium">เบอร์โทร</th>
+                <th className="px-5 py-4 text-left font-medium">วันที่</th>
+                <th className="px-5 py-4 text-left font-medium">เวลา</th>
+                <th className="px-5 py-4 text-left font-medium">สถานะ</th>
+                <th className="px-5 py-4 text-center font-medium">จัดการ</th>
               </tr>
             </thead>
 
@@ -364,7 +364,7 @@ export default function AdminTable({
         </button>
 
         <div className="text-xs font-medium uppercase tracking-[0.16em] text-stone-500">
-          Page {currentPage} / {totalPages || 1}
+          หน้า {currentPage} / {totalPages || 1}
         </div>
 
         <button

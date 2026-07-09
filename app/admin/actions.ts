@@ -57,3 +57,42 @@ export async function blockCalendarSlot(formData: FormData) {
 
   revalidatePath("/admin/calendar");
 }
+
+function normalizeUrl(value: FormDataEntryValue | null) {
+  const url = String(value ?? "").trim();
+
+  if (!url) {
+    return null;
+  }
+
+  if (!/^https?:\/\//i.test(url)) {
+    return `https://${url}`;
+  }
+
+  return url;
+}
+
+export async function updatePortfolioLinks(formData: FormData) {
+  const instagramUrl = normalizeUrl(formData.get("instagramUrl"));
+  const facebookUrl = normalizeUrl(formData.get("facebookUrl"));
+  const supabase = createAdminClient();
+
+  const { error } = await supabase.from("site_settings").upsert(
+    {
+      id: 1,
+      instagram_url: instagramUrl,
+      facebook_url: facebookUrl,
+      updated_at: new Date().toISOString(),
+    },
+    {
+      onConflict: "id",
+    }
+  );
+
+  if (error) {
+    throw error;
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/booking");
+}

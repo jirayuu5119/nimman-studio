@@ -88,10 +88,37 @@ create table if not exists public.blocked_slots (
 create index if not exists idx_blocked_slots_booking_date
 on public.blocked_slots (booking_date);
 
+create table if not exists public.site_settings (
+    id integer primary key default 1
+        check (id = 1),
+    instagram_url text,
+    facebook_url text,
+    updated_at timestamptz not null default now()
+);
+
+insert into public.site_settings (id, instagram_url, facebook_url)
+values (1, null, null)
+on conflict (id) do nothing;
+
+create table if not exists public.page_views (
+    id uuid primary key default gen_random_uuid(),
+    page text not null,
+    created_at timestamptz not null default now()
+);
+
+create index if not exists idx_page_views_page_created_at
+on public.page_views (page, created_at desc);
+
 alter table public.blocked_slots
 enable row level security;
 
 alter table public.bookings
+enable row level security;
+
+alter table public.site_settings
+enable row level security;
+
+alter table public.page_views
 enable row level security;
 
 create policy "Anyone can create booking"
