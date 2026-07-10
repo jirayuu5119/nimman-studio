@@ -130,6 +130,18 @@ function SuccessContent() {
               : "ได้รับหลักฐานการชำระเงินแล้ว กรุณารอช่างภาพตรวจสอบและยืนยันการจอง"}
           </p>
 
+          {!loading &&
+            !error &&
+            booking &&
+            !isConfirmed &&
+            !isCancelled &&
+            booking.status !== "completed" && (
+              <p className="mx-auto mt-6 max-w-xl border-t border-stone-200 pt-5 text-sm leading-7 text-stone-600">
+                โปรดแคปหน้าจอเลขที่การจอง และ save เบอร์โทรศัพท์ไว้
+                สามารถตรวจสอบสถานะการจองได้ที่หน้าจองคิว
+              </p>
+            )}
+
           {bookingNo && (
             <div className="mx-auto mt-9 max-w-xl rounded-[1.5rem] border border-stone-200 bg-stone-50/80 p-5">
               <div className="text-xs font-medium uppercase tracking-[0.25em] text-stone-400">
