@@ -439,8 +439,10 @@ begin
     raise exception using errcode = '22023', message = 'INVALID_BOOKING_INPUT';
   end if;
 
-  if p_total_price <> case when p_hours = 3 then 4000 else 4500 end
+  if p_total_price <> (
+       (case when p_hours = 3 then 4000 else 4500 end)
        + (p_graduates - 1) * 1000
+     )
     or p_deposit_amount <> 1000
     or p_remaining_amount <> greatest(p_total_price - 1000, 0)
   then
