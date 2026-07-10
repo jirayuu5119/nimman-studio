@@ -9,6 +9,7 @@ export const runtime = "nodejs";
 
 const ACTIVE_BOOKING_STATUSES = ["pending", "paid", "confirmed", "completed"];
 const DEPOSIT_AMOUNT = 1000;
+const MAX_SLIP_SIZE = 3_000_000;
 
 function getRequiredString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -112,6 +113,16 @@ export async function POST(req: Request) {
       );
     }
 
+    if (slip.size > MAX_SLIP_SIZE) {
+      return NextResponse.json(
+        {
+          error:
+            "รูปสลิปมีขนาดใหญ่เกินไป กรุณาแคปหน้าจอสลิปแล้วเลือกรูปที่แคปใหม่",
+        },
+        { status: 413 }
+      );
+    }
+
     const bookingDate = getRequiredString(formData, "bookingDate");
     const period = getRequiredString(formData, "period") as BookingPeriod;
     const startTime = getRequiredString(formData, "startTime");
@@ -128,6 +139,13 @@ export async function POST(req: Request) {
     const totalPrice = getRequiredNumber(formData, "totalPrice");
     const depositAmount = DEPOSIT_AMOUNT;
     const remainingAmount = Math.max(totalPrice - depositAmount, 0);
+
+    if (totalPrice <= 0) {
+      return NextResponse.json(
+        { error: "ข้อมูลราคาแพ็กเกจไม่ถูกต้อง กรุณากลับไปเลือกแพ็กเกจใหม่" },
+        { status: 400 }
+      );
+    }
 
     if (period !== "morning" && period !== "afternoon") {
       return NextResponse.json(

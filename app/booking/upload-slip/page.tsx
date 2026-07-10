@@ -15,8 +15,18 @@ import {
 } from "lucide-react";
 
 import { useBooking } from "@/context/BookingContext";
+import { PACKAGES } from "@/lib/packages";
+import { prepareSlipUpload } from "@/lib/prepareSlipUpload";
 
 const DEPOSIT_AMOUNT = 1000;
+
+type CreateBookingResponse = {
+  error?: string;
+  bookingNo?: string;
+  accessToken?: string;
+  slipUrl?: string;
+  remainingAmount?: number;
+};
 
 function formatDateLocal(date: Date) {
   const year = date.getFullYear();
@@ -37,9 +47,16 @@ export default function UploadSlipPage() {
   const realPromptPayNumber = "8302376723";
 
   const depositAmount = booking.depositAmount ?? DEPOSIT_AMOUNT;
-  const totalPrice = booking.totalPrice ?? 0;
+  const packageInfo = PACKAGES[booking.hours];
+  const calculatedTotalPrice =
+    packageInfo.basePrice +
+    Math.max(0, booking.graduates - 1) * packageInfo.extraGraduatePrice;
+  const totalPrice =
+    booking.totalPrice > 0 ? booking.totalPrice : calculatedTotalPrice;
   const remainingAmount =
-    booking.remainingAmount ?? Math.max(totalPrice - depositAmount, 0);
+    booking.totalPrice > 0
+      ? booking.remainingAmount
+      : Math.max(totalPrice - depositAmount, 0);
 
   const preview = useMemo(() => {
     if (!file) return "";
@@ -94,9 +111,10 @@ export default function UploadSlipPage() {
     try {
       setLoading(true);
 
+      const uploadFile = await prepareSlipUpload(file);
       const formData = new FormData();
 
-      formData.append("slip", file);
+      formData.append("slip", uploadFile);
       formData.append("bookingDate", formatDateLocal(booking.date));
       formData.append("period", booking.period);
       formData.append("startTime", booking.startTime);
@@ -117,16 +135,32 @@ export default function UploadSlipPage() {
         body: formData,
       });
 
-      const result = await response.json();
+      let result: CreateBookingResponse = {};
+      const responseType = response.headers.get("content-type") ?? "";
+
+      if (responseType.includes("application/json")) {
+        result = (await response.json()) as CreateBookingResponse;
+      }
 
       if (!response.ok) {
+        if (response.status === 413) {
+          throw new Error(
+            "รูปสลิปมีขนาดใหญ่เกินไป กรุณาแคปหน้าจอสลิปแล้วเลือกรูปที่แคปใหม่"
+          );
+        }
+
         throw new Error(
-          result.error ?? "บันทึกการจองไม่สำเร็จ กรุณาลองใหม่"
+          result.error ?? "บันทึกการจองไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"
         );
+      }
+
+      if (!result.bookingNo || !result.accessToken) {
+        throw new Error("ระบบไม่ได้รับเลขที่การจอง กรุณาลองใหม่อีกครั้ง");
       }
 
       setBooking((prev) => ({
         ...prev,
+        totalPrice,
         depositAmount,
         remainingAmount: result.remainingAmount ?? remainingAmount,
         slipUrl: result.slipUrl ?? "",
