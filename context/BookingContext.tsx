@@ -15,6 +15,10 @@ type BookingContextType = {
   setBooking: React.Dispatch<React.SetStateAction<BookingData>>;
 };
 
+type StoredBookingData = Omit<Partial<BookingData>, "date"> & {
+  date?: string | null;
+};
+
 const BookingContext = createContext<BookingContextType | null>(null);
 
 const initialBooking: BookingData = {
@@ -51,38 +55,46 @@ export function BookingProvider({
 }: {
   children: ReactNode;
 }) {
-  const [booking, setBooking] = useState<BookingData>(() => {
-    if (typeof window === "undefined") {
-      return initialBooking;
-    }
-
-    const saved = localStorage.getItem("booking");
-
-    if (!saved) {
-      return initialBooking;
-    }
-
-    const data = JSON.parse(saved);
-
-    const totalPrice = data.totalPrice ?? 0;
-    const depositAmount = data.depositAmount ?? 1000;
-    const remainingAmount =
-      data.remainingAmount ?? Math.max(totalPrice - depositAmount, 0);
-
-    return {
-      ...initialBooking,
-      ...data,
-      date: data.date ? new Date(data.date) : null,
-      startTime: data.startTime ?? null,
-      endTime: data.endTime ?? null,
-      depositAmount,
-      remainingAmount,
-    };
-  });
+  const [booking, setBooking] = useState<BookingData>(initialBooking);
+  const [hasLoadedSavedBooking, setHasLoadedSavedBooking] = useState(false);
 
   useEffect(() => {
+    const loadSavedBooking = window.setTimeout(() => {
+      const saved = localStorage.getItem("booking");
+
+      if (saved) {
+        try {
+          const data = JSON.parse(saved) as StoredBookingData;
+          const totalPrice = data.totalPrice ?? 0;
+          const depositAmount = data.depositAmount ?? 1000;
+          const remainingAmount =
+            data.remainingAmount ?? Math.max(totalPrice - depositAmount, 0);
+
+          setBooking({
+            ...initialBooking,
+            ...data,
+            date: data.date ? new Date(data.date) : null,
+            startTime: data.startTime ?? null,
+            endTime: data.endTime ?? null,
+            depositAmount,
+            remainingAmount,
+          });
+        } catch (error) {
+          console.error("Invalid saved booking data:", error);
+          localStorage.removeItem("booking");
+        }
+      }
+
+      setHasLoadedSavedBooking(true);
+    }, 0);
+
+    return () => window.clearTimeout(loadSavedBooking);
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedSavedBooking) return;
     localStorage.setItem("booking", JSON.stringify(booking));
-  }, [booking]);
+  }, [booking, hasLoadedSavedBooking]);
 
   return (
     <BookingContext.Provider value={{ booking, setBooking }}>
