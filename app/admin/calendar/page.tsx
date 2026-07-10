@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
 import { blockCalendarDay, blockCalendarSlot } from "@/app/admin/actions";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { BlockedSlot, Booking, BookingPeriod } from "@/types/booking";
 
 function formatDateLocal(date: Date) {
@@ -147,10 +147,7 @@ export default async function AdminCalendarPage({
     nextMonthDate.getMonth() + 1
   }`;
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = createAdminClient();
 
   const [bookingsResult, blockedSlotsResult] = await Promise.all([
     supabase

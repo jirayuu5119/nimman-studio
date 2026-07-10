@@ -5,9 +5,9 @@ import { updatePortfolioLinks } from "./actions";
 import RecentBookings from "./RecentBookings";
 import StatCard from "./StatCard";
 import RevenueChart from "./RevenueChart";
-import { createClient } from "@supabase/supabase-js";
 import AdminTable from "./AdminTable";
 import { getSiteSettings, type SiteSettings } from "@/lib/siteSettings";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { Booking } from "@/types/booking";
 import {
   CalendarDays,
@@ -60,16 +60,26 @@ export default async function AdminPage({
   const params = await searchParams;
 
   const page = Math.max(1, Number(params.page ?? 1));
-  const q = params.q ?? "";
-  const status = params.status ?? "all";
+  const q = (params.q ?? "")
+    .replace(/[^\p{L}\p{N}\s@._+\-]/gu, " ")
+    .trim()
+    .slice(0, 100);
+  const allowedStatuses = new Set([
+    "all",
+    "pending",
+    "paid",
+    "confirmed",
+    "completed",
+    "cancelled",
+  ]);
+  const status = allowedStatuses.has(params.status ?? "all")
+    ? params.status ?? "all"
+    : "all";
 
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = createAdminClient();
 
   let query = supabase.from("bookings").select("*", {
     count: "exact",
@@ -103,18 +113,14 @@ export default async function AdminPage({
         .range(0, 9999),
       getSiteSettings(supabase),
       supabase
-        .from("page_views")
-        .select("id", { count: "exact", head: true })
+        .from("page_visitors")
+        .select("visitor_hash", { count: "exact", head: true })
         .eq("page", "booking")
-        .gte("created_at", bookingViewsSince),
+        .gte("last_seen_at", bookingViewsSince),
     ]);
 
   if (allBookingsResult.error) {
     throw allBookingsResult.error;
-  }
-
-  if (bookingViewsResult.error) {
-    console.error("Page views query error:", bookingViewsResult.error);
   }
 
   const analyticsBookings = (allBookingsResult.data ?? []) as AnalyticsBooking[];

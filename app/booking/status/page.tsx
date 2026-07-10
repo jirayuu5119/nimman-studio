@@ -35,10 +35,7 @@ export default function BookingStatusLookupPage() {
         );
       }
 
-      const params = new URLSearchParams({
-        bookingNo: result.bookingNo,
-        token: result.accessToken,
-      });
+      const params = new URLSearchParams({ bookingNo: result.bookingNo });
       router.push(`/booking/success?${params.toString()}`);
     } catch (lookupError) {
       setError(

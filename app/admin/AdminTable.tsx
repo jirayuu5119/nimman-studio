@@ -105,7 +105,7 @@ export default function AdminTable({
       "มัดจำ",
       "ยอดคงเหลือ",
       "สถานะ",
-      "ลิงก์สลิป",
+      "มีสลิป",
     ];
 
     const rows = bookings.map((b) => [
@@ -118,7 +118,7 @@ export default function AdminTable({
       b.deposit_amount ?? 0,
       b.remaining_amount ?? 0,
       b.status,
-      b.slip_url ?? "",
+      b.slip_path || b.slip_url ? "มี" : "ไม่มี",
     ]);
 
     const csv = [
@@ -151,7 +151,7 @@ export default function AdminTable({
       มัดจำ: b.deposit_amount ?? 0,
       ยอดคงเหลือ: b.remaining_amount ?? 0,
       สถานะ: b.status,
-      ลิงก์สลิป: b.slip_url ?? "",
+      มีสลิป: b.slip_path || b.slip_url ? "มี" : "ไม่มี",
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);

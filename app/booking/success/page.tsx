@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   BadgeCheck,
   CalendarDays,
@@ -18,6 +18,7 @@ import BookingConfirmationSection from "@/components/BookingConfirmationSection"
 import type { BookingConfirmationData } from "@/types/booking";
 
 function SuccessContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const bookingNo = searchParams.get("bookingNo") ?? "";
   const token = searchParams.get("token") ?? "";
@@ -27,7 +28,7 @@ function SuccessContent() {
   const [copied, setCopied] = useState(false);
 
   const loadBooking = useCallback(async () => {
-    if (!bookingNo || !token) {
+    if (!bookingNo) {
       setError("ลิงก์ตรวจสอบการจองไม่ครบถ้วน");
       setLoading(false);
       return;
@@ -46,6 +47,11 @@ function SuccessContent() {
       }
 
       setBooking(result.booking as BookingConfirmationData);
+      if (token) {
+        router.replace(
+          `/booking/success?${new URLSearchParams({ bookingNo }).toString()}`
+        );
+      }
     } catch (loadError) {
       setError(
         loadError instanceof Error
@@ -55,7 +61,7 @@ function SuccessContent() {
     } finally {
       setLoading(false);
     }
-  }, [bookingNo, token]);
+  }, [bookingNo, router, token]);
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => void loadBooking(), 0);

@@ -1,5 +1,8 @@
+import "server-only";
+
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseServer } from "@/lib/supabase/server";
+import { parseAllowedSiteUrl } from "@/lib/site-url";
 
 export type SiteSettings = {
   instagram_url: string | null;
@@ -24,9 +27,27 @@ function isMissingTableError(error: { code?: string; message?: string } | null) 
 }
 
 function normalizeSettings(value: Partial<SiteSettings> | null): SiteSettings {
+  const normalizeUrl = (
+    raw: string | null | undefined,
+    hosts: ReadonlySet<string>
+  ) => {
+    if (!raw?.trim()) return null;
+    try {
+      return parseAllowedSiteUrl(raw, hosts);
+    } catch {
+      return null;
+    }
+  };
+
   return {
-    instagram_url: value?.instagram_url?.trim() || null,
-    facebook_url: value?.facebook_url?.trim() || null,
+    instagram_url: normalizeUrl(
+      value?.instagram_url,
+      new Set(["instagram.com", "www.instagram.com"])
+    ),
+    facebook_url: normalizeUrl(
+      value?.facebook_url,
+      new Set(["facebook.com", "www.facebook.com", "m.facebook.com"])
+    ),
   };
 }
 
@@ -44,47 +65,9 @@ async function readStorageSettings(
   try {
     const parsed = JSON.parse(await data.text()) as Partial<SiteSettings>;
     return normalizeSettings(parsed);
-  } catch (error) {
-    console.error("Site settings fallback parse error:", error);
+  } catch {
+    console.error("site_settings_fallback_parse_failed");
     return DEFAULT_SITE_SETTINGS;
-  }
-}
-
-async function ensureFallbackBucket(supabase: SupabaseClient) {
-  const { error: getError } = await supabase.storage.getBucket(FALLBACK_BUCKET);
-
-  if (!getError) {
-    return;
-  }
-
-  const { error: createError } = await supabase.storage.createBucket(
-    FALLBACK_BUCKET,
-    {
-      public: false,
-    }
-  );
-
-  if (createError && !createError.message.toLowerCase().includes("already")) {
-    throw createError;
-  }
-}
-
-async function writeStorageSettings(
-  supabase: SupabaseClient,
-  settings: SiteSettings
-) {
-  await ensureFallbackBucket(supabase);
-
-  const body = JSON.stringify(settings, null, 2);
-  const { error } = await supabase.storage
-    .from(FALLBACK_BUCKET)
-    .upload(FALLBACK_PATH, body, {
-      contentType: "application/json",
-      upsert: true,
-    });
-
-  if (error) {
-    throw error;
   }
 }
 
@@ -102,7 +85,7 @@ export async function getSiteSettings(
       return readStorageSettings(supabase);
     }
 
-    console.error("Site settings query error:", error);
+    console.error("site_settings_query_failed");
     return readStorageSettings(supabase);
   }
 
@@ -116,28 +99,4 @@ export async function getSiteSettings(
   return storageSettings.instagram_url || storageSettings.facebook_url
     ? storageSettings
     : tableSettings;
-}
-
-export async function saveSiteSettings(
-  settings: SiteSettings,
-  supabase: SupabaseClient = supabaseServer
-) {
-  const normalized = normalizeSettings(settings);
-
-  const { error } = await supabase.from("site_settings").upsert(
-    {
-      id: 1,
-      ...normalized,
-      updated_at: new Date().toISOString(),
-    },
-    {
-      onConflict: "id",
-    }
-  );
-
-  if (error && !isMissingTableError(error)) {
-    throw error;
-  }
-
-  await writeStorageSettings(supabase, normalized);
 }

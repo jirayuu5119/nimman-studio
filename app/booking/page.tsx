@@ -61,8 +61,7 @@ export default function BookingPage() {
 
         setBookedSlots(data);
         setAvailabilityError("");
-      } catch (error) {
-        console.error("Availability fetch error:", error);
+      } catch {
         setBookedSlots([]);
         setAvailabilityError(
           "ยังโหลดตารางคิวไม่ได้ กรุณารีเฟรชหน้าอีกครั้ง"

@@ -2,6 +2,11 @@
 
 import { DayPicker } from "react-day-picker";
 import { th } from "date-fns/locale";
+import {
+  addDaysToDateKey,
+  BOOKING_HORIZON_DAYS,
+  getBangkokDateKey,
+} from "@/lib/booking-rules";
 import "react-day-picker/dist/style.css";
 
 type BookedSlot = {
@@ -69,6 +74,10 @@ export default function Calendar({
   const fullDays = Object.entries(dayStatus)
     .filter(([, value]) => value.morning && value.afternoon)
     .map(([date]) => parseDateLocal(date));
+  const today = parseDateLocal(getBangkokDateKey());
+  const maxDate = parseDateLocal(
+    addDaysToDateKey(getBangkokDateKey(), BOOKING_HORIZON_DAYS)
+  );
 
   return (
     <div className="w-full rounded-[1.5rem] border border-stone-200/80 bg-white p-4 shadow-[0_12px_40px_rgba(0,0,0,0.04)] md:p-5">
@@ -77,7 +86,7 @@ export default function Calendar({
         mode="single"
         selected={selected ?? undefined}
         onSelect={(date) => onSelect(date ?? null)}
-        disabled={fullDays}
+        disabled={[{ before: today }, { after: maxDate }, ...fullDays]}
         showOutsideDays
         modifiers={{
           available: (date) => getStatus(date) === "available",

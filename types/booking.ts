@@ -63,6 +63,7 @@ export type Booking = {
   remaining_amount: number;
 
   slip_url: string | null;
+  slip_path?: string | null;
 
   status: BookingStatus;
 

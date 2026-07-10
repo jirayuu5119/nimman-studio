@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { KeyRound } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { changeAdminPassword } from "@/app/admin/actions";
 
 export default function ChangePasswordForm() {
   const [password, setPassword] = useState("");
@@ -17,8 +17,8 @@ export default function ChangePasswordForm() {
     setMessage("");
     setError("");
 
-    if (password.length < 8) {
-      setError("รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร");
+    if (password.length < 12) {
+      setError("รหัสผ่านต้องมีอย่างน้อย 12 ตัวอักษร");
       setLoading(false);
       return;
     }
@@ -29,12 +29,10 @@ export default function ChangePasswordForm() {
       return;
     }
 
-    const { error } = await supabase.auth.updateUser({
-      password,
-    });
-
-    if (error) {
-      setError(error.message || "เปลี่ยนรหัสผ่านไม่สำเร็จ");
+    try {
+      await changeAdminPassword(password);
+    } catch {
+      setError("เปลี่ยนรหัสผ่านไม่สำเร็จ กรุณาเข้าสู่ระบบใหม่แล้วลองอีกครั้ง");
       setLoading(false);
       return;
     }
@@ -75,7 +73,7 @@ export default function ChangePasswordForm() {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             autoComplete="new-password"
-            placeholder="อย่างน้อย 8 ตัวอักษร"
+            placeholder="อย่างน้อย 12 ตัวอักษร"
             className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-stone-900 focus:bg-white"
             required
           />

@@ -23,8 +23,8 @@ const DEPOSIT_AMOUNT = 1000;
 type CreateBookingResponse = {
   error?: string;
   bookingNo?: string;
-  accessToken?: string;
-  slipUrl?: string;
+  totalPrice?: number;
+  depositAmount?: number;
   remainingAmount?: number;
 };
 
@@ -128,7 +128,6 @@ export default function UploadSlipPage() {
       formData.append("university", booking.university);
       formData.append("faculty", booking.faculty);
       formData.append("note", booking.note);
-      formData.append("totalPrice", String(totalPrice));
 
       const response = await fetch("/api/bookings/create", {
         method: "POST",
@@ -154,28 +153,25 @@ export default function UploadSlipPage() {
         );
       }
 
-      if (!result.bookingNo || !result.accessToken) {
+      if (!result.bookingNo) {
         throw new Error("ระบบไม่ได้รับเลขที่การจอง กรุณาลองใหม่อีกครั้ง");
       }
 
       setBooking((prev) => ({
         ...prev,
-        totalPrice,
-        depositAmount,
+        totalPrice: result.totalPrice ?? totalPrice,
+        depositAmount: result.depositAmount ?? depositAmount,
         remainingAmount: result.remainingAmount ?? remainingAmount,
-        slipUrl: result.slipUrl ?? "",
+        slipUrl: "",
         status: "pending",
       }));
 
       const successParams = new URLSearchParams({
         bookingNo: result.bookingNo,
-        token: result.accessToken,
       });
 
       router.push(`/booking/success?${successParams.toString()}`);
     } catch (error) {
-      console.error("BOOKING ERROR:", error);
-
       if (error instanceof Error) {
         alert(error.message);
       } else {

@@ -1,138 +1,125 @@
 "use server";
 
-import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
-import { saveSiteSettings } from "@/lib/siteSettings";
+import { requireAdmin } from "@/lib/auth/require-admin";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createServerAuthClient } from "@/lib/supabase/server-auth";
+import { parseAllowedSiteUrl } from "@/lib/site-url";
+import { isBookableDate } from "@/lib/booking-rules";
 
 type BookingPeriod = "morning" | "afternoon";
-const ACTIVE_BOOKING_STATUSES = ["pending", "paid", "confirmed", "completed"];
+type AdminBookingStatus = "confirmed" | "cancelled" | "completed";
 
-function createAdminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function assertDate(value: string) {
+  if (!isBookableDate(value)) {
+    throw new Error("Invalid booking date");
+  }
 }
 
 export async function updateBookingStatus(
   id: string,
-  status: "confirmed" | "cancelled" | "completed"
+  status: AdminBookingStatus
 ) {
+  const admin = await requireAdmin();
+  if (!UUID_PATTERN.test(id) || !["confirmed", "cancelled", "completed"].includes(status)) {
+    throw new Error("Invalid booking update");
+  }
+
   const supabase = createAdminClient();
+  const { error } = await supabase.rpc("update_booking_status_atomic", {
+    p_booking_id: id,
+    p_to_status: status,
+    p_actor_user_id: admin.userId,
+  });
 
-  const { error } = await supabase
-    .from("bookings")
-    .update({
-      status,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", id);
-
-  if (error) throw error;
-
+  if (error) throw new Error("BOOKING_STATUS_UPDATE_FAILED");
   revalidatePath("/admin");
   revalidatePath(`/admin/bookings/${id}`);
 }
 
 export async function blockCalendarSlot(formData: FormData) {
+  const admin = await requireAdmin();
   const bookingDate = String(formData.get("bookingDate") ?? "");
   const period = String(formData.get("period") ?? "") as BookingPeriod;
-
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(bookingDate)) {
-    throw new Error("Invalid booking date");
-  }
+  assertDate(bookingDate);
 
   if (period !== "morning" && period !== "afternoon") {
     throw new Error("Invalid booking period");
   }
 
   const supabase = createAdminClient();
-
-  const { error } = await supabase.from("blocked_slots").insert({
-    booking_date: bookingDate,
-    period,
-    reason: "Closed from admin calendar",
+  const { error } = await supabase.rpc("block_booking_slot_atomic", {
+    p_booking_date: bookingDate,
+    p_period: period,
+    p_actor_user_id: admin.userId,
   });
 
-  if (error && error.code !== "23505") {
-    throw error;
-  }
-
+  if (error) throw new Error("BLOCK_SLOT_FAILED");
   revalidatePath("/admin/calendar");
 }
 
 export async function blockCalendarDay(formData: FormData) {
+  const admin = await requireAdmin();
   const bookingDate = String(formData.get("bookingDate") ?? "");
-
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(bookingDate)) {
-    throw new Error("Invalid booking date");
-  }
+  assertDate(bookingDate);
 
   const supabase = createAdminClient();
+  const { error } = await supabase.rpc("block_booking_day_atomic", {
+    p_booking_date: bookingDate,
+    p_actor_user_id: admin.userId,
+  });
 
-  const { data: bookings, error: bookingsError } = await supabase
-    .from("bookings")
-    .select("period")
-    .eq("booking_date", bookingDate)
-    .in("status", ACTIVE_BOOKING_STATUSES);
-
-  if (bookingsError) {
-    throw bookingsError;
-  }
-
-  const bookedPeriods = new Set(
-    (bookings ?? []).map((booking) => booking.period as BookingPeriod)
-  );
-
-  const slotsToBlock = (["morning", "afternoon"] as BookingPeriod[])
-    .filter((period) => !bookedPeriods.has(period))
-    .map((period) => ({
-      booking_date: bookingDate,
-      period,
-      reason: "Closed full day from admin calendar",
-    }));
-
-  if (slotsToBlock.length > 0) {
-    const { error } = await supabase.from("blocked_slots").upsert(slotsToBlock, {
-      onConflict: "booking_date,period",
-      ignoreDuplicates: true,
-    });
-
-    if (error) {
-      throw error;
-    }
-  }
-
+  if (error) throw new Error("BLOCK_DAY_FAILED");
   revalidatePath("/admin/calendar");
 }
 
-function normalizeUrl(value: FormDataEntryValue | null) {
-  const url = String(value ?? "").trim();
-
-  if (!url) {
-    return null;
-  }
-
-  if (!/^https?:\/\//i.test(url)) {
-    return `https://${url}`;
-  }
-
-  return url;
-}
-
 export async function updatePortfolioLinks(formData: FormData) {
-  const instagramUrl = normalizeUrl(formData.get("instagramUrl"));
-  const facebookUrl = normalizeUrl(formData.get("facebookUrl"));
-  const supabase = createAdminClient();
-
-  await saveSiteSettings(
-    {
-      instagram_url: instagramUrl,
-      facebook_url: facebookUrl,
-    },
-    supabase
+  const admin = await requireAdmin();
+  const instagramUrl = parseAllowedSiteUrl(
+    String(formData.get("instagramUrl") ?? ""),
+    new Set(["instagram.com", "www.instagram.com"])
+  );
+  const facebookUrl = parseAllowedSiteUrl(
+    String(formData.get("facebookUrl") ?? ""),
+    new Set(["facebook.com", "www.facebook.com", "m.facebook.com"])
   );
 
+  const supabase = createAdminClient();
+  const { error } = await supabase.rpc("update_site_settings_atomic", {
+    p_instagram_url: instagramUrl,
+    p_facebook_url: facebookUrl,
+    p_actor_user_id: admin.userId,
+  });
+
+  if (error) throw new Error("SITE_SETTINGS_UPDATE_FAILED");
   revalidatePath("/admin");
   revalidatePath("/booking");
+}
+
+
+export async function changeAdminPassword(password: string) {
+  const admin = await requireAdmin();
+  if (
+    typeof password !== "string" ||
+    password.length < 12 ||
+    password.length > 128
+  ) {
+    throw new Error("รหัสผ่านต้องมี 12-128 ตัวอักษร");
+  }
+
+  const authClient = await createServerAuthClient();
+  const { error } = await authClient.auth.updateUser({ password });
+  if (error) throw new Error("เปลี่ยนรหัสผ่านไม่สำเร็จ");
+
+  const supabase = createAdminClient();
+  const { error: auditError } = await supabase.from("audit_logs").insert({
+    resource_type: "admin_user",
+    resource_id: admin.userId,
+    action: "password_changed",
+    actor_user_id: admin.userId,
+  });
+  if (auditError) throw new Error("บันทึกเหตุการณ์ความปลอดภัยไม่สำเร็จ");
 }

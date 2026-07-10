@@ -1,3 +1,11 @@
+import "server-only";
+
+import "server-only";
+
+import "server-only";
+
+import "server-only";
+
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 function getSigningSecret() {
@@ -10,7 +18,7 @@ function getSigningSecret() {
   return secret;
 }
 
-export function createBookingAccessToken(bookingNo: string) {
+function createLegacyBookingAccessToken(bookingNo: string) {
   return createHmac("sha256", getSigningSecret())
     .update(bookingNo)
     .digest("hex");
@@ -24,7 +32,7 @@ export function verifyBookingAccessToken(
     return false;
   }
 
-  const expected = Buffer.from(createBookingAccessToken(bookingNo), "hex");
+  const expected = Buffer.from(createLegacyBookingAccessToken(bookingNo), "hex");
   const received = Buffer.from(token, "hex");
 
   return (

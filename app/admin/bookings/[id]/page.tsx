@@ -1,7 +1,8 @@
 import { updateBookingStatus } from "@/app/admin/actions";
 import StatusBadge from "@/app/admin/StatusBadge";
 import type { Booking } from "@/types/booking";
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
@@ -27,6 +28,20 @@ function getPeriodLabel(period: string) {
   if (period === "morning") return "รอบเช้า";
   if (period === "afternoon") return "รอบบ่าย";
   return period || "-";
+}
+
+function getLegacySlipPath(slipUrl: string | null) {
+  if (!slipUrl) return null;
+
+  try {
+    const url = new URL(slipUrl);
+    const marker = "/storage/v1/object/public/slips/";
+    if (!url.pathname.startsWith(marker)) return null;
+    const path = decodeURIComponent(url.pathname.slice(marker.length));
+    return path && !path.includes("..") ? path : null;
+  } catch {
+    return null;
+  }
 }
 
 function DetailRow({
@@ -85,15 +100,9 @@ export default async function BookingDetail({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  await requireAdmin();
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error("Missing Supabase environment variables");
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabase = createAdminClient();
 
   const { data } = await supabase
     .from("bookings")
@@ -106,6 +115,12 @@ export default async function BookingDetail({
   }
 
   const booking = data as BookingDetailRecord;
+  const slipPath =
+    booking.slip_path?.trim() || getLegacySlipPath(booking.slip_url);
+  const { data: signedSlip } = slipPath
+    ? await supabase.storage.from("slips").createSignedUrl(slipPath, 10 * 60)
+    : { data: null };
+  const slipDisplayUrl = signedSlip?.signedUrl ?? null;
   const totalPrice = booking.total_price ?? 0;
   const depositAmount = booking.deposit_amount ?? 1000;
   const remainingAmount =
@@ -272,11 +287,11 @@ export default async function BookingDetail({
                 </h2>
               </div>
 
-              {booking.slip_url ? (
+              {slipDisplayUrl ? (
                 <div className="overflow-hidden rounded-2xl border border-stone-200 bg-stone-50">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={booking.slip_url}
+                    src={slipDisplayUrl}
                     alt="Slip"
                     className="max-h-[680px] w-full object-contain"
                   />

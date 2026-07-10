@@ -1,4 +1,4 @@
-const MAX_SLIP_BYTES = 1_500_000;
+const MAX_SLIP_BYTES = 3_000_000;
 const MAX_IMAGE_DIMENSION = 1800;
 
 function loadImage(file: File) {
@@ -62,7 +62,9 @@ function drawImage(
 export async function prepareSlipUpload(file: File) {
   const canUploadWithoutCompression =
     file.size <= MAX_SLIP_BYTES &&
-    ["image/jpeg", "image/png", "image/webp"].includes(file.type);
+    ["image/jpeg", "image/png", "image/heic", "image/heif"].includes(
+      file.type.toLowerCase()
+    );
 
   if (canUploadWithoutCompression) {
     return file;
@@ -104,8 +106,7 @@ export async function prepareSlipUpload(file: File) {
       type: "image/jpeg",
       lastModified: Date.now(),
     });
-  } catch (error) {
-    console.error("Slip compression error:", error);
+  } catch {
     throw new Error(
       "ไม่สามารถเตรียมรูปสลิปนี้ได้ กรุณาแคปหน้าจอสลิปแล้วเลือกรูปที่แคปใหม่"
     );

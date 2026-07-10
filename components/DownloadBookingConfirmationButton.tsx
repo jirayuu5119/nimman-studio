@@ -78,8 +78,7 @@ export default function DownloadBookingConfirmationButton({
 
       downloadBlob(blob, filename);
       setMessage("ดาวน์โหลดใบยืนยันเรียบร้อยแล้ว");
-    } catch (error) {
-      console.error("Create booking confirmation error:", error);
+    } catch {
       setIsError(true);
       setMessage("สร้างใบยืนยันไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
     } finally {
