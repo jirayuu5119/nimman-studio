@@ -37,6 +37,15 @@ function canShareFile(file: File) {
   }
 }
 
+function isMobileDevice() {
+  const userAgent = navigator.userAgent;
+  const isMobileUserAgent = /Android|iPhone|iPad|iPod/i.test(userAgent);
+  const isIPadDesktopMode =
+    navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+
+  return isMobileUserAgent || isIPadDesktopMode;
+}
+
 export default function DownloadBookingConfirmationButton({
   bookingNo,
   status,
@@ -75,7 +84,7 @@ export default function DownloadBookingConfirmationButton({
       const filename = `nimman-foto-booking-${bookingNo}.png`;
       const file = new File([blob], filename, { type: "image/png" });
 
-      if (canShareFile(file)) {
+      if (isMobileDevice() && canShareFile(file)) {
         try {
           await navigator.share({
             files: [file],
