@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { BookingPeriod } from "@/types/booking";
 import { generateBookingNo } from "@/lib/booking";
 import { createBookingAccessToken } from "@/lib/bookingAccessToken";
+import { isValidThaiPhone, normalizePhone } from "@/lib/phone";
 import { supabaseServer } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -130,7 +131,7 @@ export async function POST(req: Request) {
     const hours = getRequiredNumber(formData, "hours");
     const graduates = getRequiredNumber(formData, "graduates");
     const fullname = getRequiredString(formData, "fullname");
-    const phone = getRequiredString(formData, "phone");
+    const phone = normalizePhone(getRequiredString(formData, "phone"));
     const line = getOptionalString(formData, "line");
     const facebook = getOptionalString(formData, "facebook");
     const university = getOptionalString(formData, "university");
@@ -139,6 +140,13 @@ export async function POST(req: Request) {
     const totalPrice = getRequiredNumber(formData, "totalPrice");
     const depositAmount = DEPOSIT_AMOUNT;
     const remainingAmount = Math.max(totalPrice - depositAmount, 0);
+
+    if (!isValidThaiPhone(phone)) {
+      return NextResponse.json(
+        { error: "กรุณากรอกเบอร์โทรศัพท์ให้ครบ 10 หลัก" },
+        { status: 400 }
+      );
+    }
 
     if (totalPrice <= 0) {
       return NextResponse.json(

@@ -1,6 +1,10 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createBookingAccessToken } from "@/lib/bookingAccessToken";
+import {
+  isValidLegacyLookupPhone,
+  normalizePhone,
+} from "@/lib/phone";
 import { supabaseServer } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -19,16 +23,6 @@ const globalRateLimit = globalThis as typeof globalThis & {
 const bookingLookupAttempts =
   globalRateLimit.bookingLookupAttempts ?? new Map<string, RateLimitEntry>();
 globalRateLimit.bookingLookupAttempts = bookingLookupAttempts;
-
-function normalizePhone(value: string) {
-  const digits = value.replace(/\D/g, "");
-
-  if (digits.startsWith("66") && digits.length === 11) {
-    return `0${digits.slice(2)}`;
-  }
-
-  return digits;
-}
 
 function hashPhone(value: string) {
   return createHash("sha256").update(value).digest();
@@ -101,7 +95,10 @@ export async function POST(request: Request) {
   const phone =
     typeof payload.phone === "string" ? normalizePhone(payload.phone) : "";
 
-  if (!/^NF-\d{8}-\d{4}$/.test(bookingNo) || !/^0\d{8,9}$/.test(phone)) {
+  if (
+    !/^NF-\d{8}-\d{4}$/.test(bookingNo) ||
+    !isValidLegacyLookupPhone(phone)
+  ) {
     return NextResponse.json(
       { error: "ข้อมูลการจองไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง" },
       { status: 400 }

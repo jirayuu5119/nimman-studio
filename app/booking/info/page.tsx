@@ -4,6 +4,7 @@ import type { ChangeEvent } from "react";
 import type { BookingData } from "@/types/booking";
 import { useRouter } from "next/navigation";
 import { useBooking } from "@/context/BookingContext";
+import { isValidThaiPhone } from "@/lib/phone";
 import { UNIVERSITIES } from "@/lib/universities";
 
 export default function BookingInfoPage() {
@@ -24,9 +25,10 @@ export default function BookingInfoPage() {
         ),
       ]
     : defaultFaculties;
+  const phoneIsValid = isValidThaiPhone(booking.phone);
   const canNext =
     booking.fullname.trim() !== "" &&
-    booking.phone.trim() !== "" &&
+    phoneIsValid &&
     booking.line.trim() !== "" &&
     booking.university.trim() !== "" &&
     booking.faculty.trim() !== "";
@@ -92,10 +94,17 @@ export default function BookingInfoPage() {
                 name="phone"
                 value={booking.phone}
                 onChange={handleChange}
-                placeholder="กรอกเบอร์โทร"
+                placeholder="กรอกเบอร์โทร 10 หลัก"
                 inputMode="tel"
+                autoComplete="tel"
+                aria-invalid={booking.phone.trim() !== "" && !phoneIsValid}
                 className={inputClass}
               />
+              {booking.phone.trim() !== "" && !phoneIsValid && (
+                <p className="mt-2 text-xs leading-5 text-rose-600">
+                  กรุณากรอกเบอร์โทรศัพท์ให้ครบ 10 หลัก
+                </p>
+              )}
             </div>
 
             <div>

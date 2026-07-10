@@ -1,4 +1,5 @@
 import type { BookingData } from "@/types/booking";
+import { isValidThaiPhone } from "@/lib/phone";
 
 export function isStep1Completed(booking: BookingData): boolean {
   return (
@@ -11,7 +12,7 @@ export function isStep1Completed(booking: BookingData): boolean {
 export function isStep2Completed(booking: BookingData): boolean {
   return (
     booking.fullname.trim() !== "" &&
-    booking.phone.trim() !== "" &&
+    isValidThaiPhone(booking.phone) &&
     booking.university.trim() !== "" &&
     booking.faculty.trim() !== ""
   );
