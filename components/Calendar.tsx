@@ -1,6 +1,7 @@
 "use client";
 
 import { DayPicker } from "react-day-picker";
+import { th } from "date-fns/locale";
 import "react-day-picker/dist/style.css";
 
 type BookedSlot = {
@@ -72,6 +73,7 @@ export default function Calendar({
   return (
     <div className="w-full rounded-[1.5rem] border border-stone-200/80 bg-white p-4 shadow-[0_12px_40px_rgba(0,0,0,0.04)] md:p-5">
       <DayPicker
+        locale={th}
         mode="single"
         selected={selected ?? undefined}
         onSelect={(date) => onSelect(date ?? null)}

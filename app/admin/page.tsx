@@ -90,9 +90,9 @@ export default async function AdminPage({
     .range(from, to);
 
   const bookingList = (bookings ?? []) as Booking[];
-  const bookingViewsSince = new Date(
-    Date.now() - 24 * 60 * 60 * 1000
-  ).toISOString();
+  const bookingViewsSinceDate = new Date();
+  bookingViewsSinceDate.setHours(bookingViewsSinceDate.getHours() - 24);
+  const bookingViewsSince = bookingViewsSinceDate.toISOString();
 
   const [allBookingsResult, siteSettings, bookingViewsResult] =
     await Promise.all([
@@ -209,7 +209,7 @@ export default async function AdminPage({
 
           <div className="flex shrink-0 items-center gap-3">
             <Link
-              href="/booking"
+              href="/"
               target="_blank"
               className="inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-900"
             >

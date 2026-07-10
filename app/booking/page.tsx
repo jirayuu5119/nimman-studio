@@ -41,6 +41,7 @@ export default function BookingPage() {
   const { booking, setBooking } = useBooking();
 
   const [bookedSlots, setBookedSlots] = useState<BookedSlot[]>([]);
+  const [availabilityError, setAvailabilityError] = useState("");
   const [siteSettings, setSiteSettings] = useState<SiteSettings>({
     instagramUrl: "",
     facebookUrl: "",
@@ -48,9 +49,23 @@ export default function BookingPage() {
 
   useEffect(() => {
     async function fetchAvailability() {
-      const res = await fetch("/api/bookings/availability");
-      const data = await res.json();
-      setBookedSlots(data);
+      try {
+        const res = await fetch("/api/bookings/availability");
+        const data = await res.json();
+
+        if (!res.ok || !Array.isArray(data)) {
+          throw new Error(data.error ?? "โหลดตารางคิวไม่สำเร็จ");
+        }
+
+        setBookedSlots(data);
+        setAvailabilityError("");
+      } catch (error) {
+        console.error("Availability fetch error:", error);
+        setBookedSlots([]);
+        setAvailabilityError(
+          "ยังโหลดตารางคิวไม่ได้ กรุณารีเฟรชหน้าอีกครั้ง"
+        );
+      }
     }
 
     fetchAvailability();
@@ -190,6 +205,15 @@ export default function BookingPage() {
                   }))
                 }
               />
+
+              {availabilityError && (
+                <p
+                  role="alert"
+                  className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm text-amber-800"
+                >
+                  {availabilityError}
+                </p>
+              )}
 
               {!booking.date && (
                 <p className="mt-4 text-center text-sm text-stone-400">

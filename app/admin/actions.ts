@@ -24,6 +24,7 @@ export async function updateBookingStatus(
     .from("bookings")
     .update({
       status,
+      updated_at: new Date().toISOString(),
     })
     .eq("id", id);
 

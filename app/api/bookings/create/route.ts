@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { BookingPeriod } from "@/types/booking";
 import { generateBookingNo } from "@/lib/booking";
+import { createBookingAccessToken } from "@/lib/bookingAccessToken";
 import { supabaseServer } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -235,6 +236,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       booking: data,
       bookingNo,
+      accessToken: createBookingAccessToken(bookingNo),
       slipUrl,
       depositAmount,
       remainingAmount,

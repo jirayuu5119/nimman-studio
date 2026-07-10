@@ -133,7 +133,12 @@ export default function UploadSlipPage() {
         status: "pending",
       }));
 
-      router.push(`/booking/success?bookingNo=${result.bookingNo}`);
+      const successParams = new URLSearchParams({
+        bookingNo: result.bookingNo,
+        token: result.accessToken,
+      });
+
+      router.push(`/booking/success?${successParams.toString()}`);
     } catch (error) {
       console.error("BOOKING ERROR:", error);
 

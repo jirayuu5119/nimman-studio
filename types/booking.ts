@@ -70,6 +70,24 @@ export type Booking = {
   updated_at?: string;
 };
 
+export type BookingConfirmationData = Pick<
+  Booking,
+  | "booking_no"
+  | "booking_date"
+  | "start_time"
+  | "end_time"
+  | "hours"
+  | "graduates"
+  | "fullname"
+  | "phone"
+  | "university"
+  | "faculty"
+  | "total_price"
+  | "status"
+  | "created_at"
+  | "updated_at"
+>;
+
 export type BlockedSlot = {
   id: string;
   booking_date: string;
