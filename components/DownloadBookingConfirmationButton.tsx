@@ -2,7 +2,7 @@
 
 import { useState, type RefObject } from "react";
 import { Download, Loader2, Share2 } from "lucide-react";
-import { toPng } from "html-to-image";
+import { toBlob } from "html-to-image";
 import type { BookingStatus } from "@/types/booking";
 
 type Props = {
@@ -20,6 +20,21 @@ function downloadBlob(blob: Blob, filename: string) {
   anchor.click();
   anchor.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function canShareFile(file: File) {
+  if (
+    typeof navigator.share !== "function" ||
+    typeof navigator.canShare !== "function"
+  ) {
+    return false;
+  }
+
+  try {
+    return navigator.canShare({ files: [file] });
+  } catch {
+    return false;
+  }
 }
 
 export default function DownloadBookingConfirmationButton({
@@ -43,24 +58,24 @@ export default function DownloadBookingConfirmationButton({
     setIsError(false);
 
     try {
-      const dataUrl = await toPng(cardRef.current, {
+      const blob = await toBlob(cardRef.current, {
         width: 1080,
         height: 1350,
         canvasWidth: 1080,
         canvasHeight: 1350,
         pixelRatio: 1,
-        cacheBust: true,
+        skipFonts: true,
         backgroundColor: "#F6F1E8",
       });
-      const blob = await fetch(dataUrl).then((response) => response.blob());
+
+      if (!blob) {
+        throw new Error("BOOKING_CONFIRMATION_IMAGE_FAILED");
+      }
+
       const filename = `nimman-foto-booking-${bookingNo}.png`;
       const file = new File([blob], filename, { type: "image/png" });
-      const canShareFile =
-        typeof navigator.share === "function" &&
-        typeof navigator.canShare === "function" &&
-        navigator.canShare({ files: [file] });
 
-      if (canShareFile) {
+      if (canShareFile(file)) {
         try {
           await navigator.share({
             files: [file],
@@ -78,7 +93,8 @@ export default function DownloadBookingConfirmationButton({
 
       downloadBlob(blob, filename);
       setMessage("ดาวน์โหลดใบยืนยันเรียบร้อยแล้ว");
-    } catch {
+    } catch (error) {
+      console.error("Booking confirmation image failed", error);
       setIsError(true);
       setMessage("สร้างใบยืนยันไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
     } finally {

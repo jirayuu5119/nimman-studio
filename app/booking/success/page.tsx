@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   BadgeCheck,
   CalendarDays,
+  Check,
   Clock3,
   Copy,
   Home,
@@ -17,6 +18,34 @@ import {
 import BookingConfirmationSection from "@/components/BookingConfirmationSection";
 import type { BookingConfirmationData } from "@/types/booking";
 
+async function copyText(value: string) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+  } catch {
+    // Some in-app browsers expose Clipboard API but block access to it.
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+
+  try {
+    textarea.focus({ preventScroll: true });
+    textarea.select();
+    if (!document.execCommand("copy")) {
+      throw new Error("COPY_FAILED");
+    }
+  } finally {
+    textarea.remove();
+  }
+}
+
 function SuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -26,6 +55,7 @@ function SuccessContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
 
   const loadBooking = useCallback(async () => {
     if (!bookingNo) {
@@ -74,9 +104,17 @@ function SuccessContent() {
 
   const copyBookingNo = async () => {
     if (!bookingNo) return;
-    await navigator.clipboard.writeText(bookingNo);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+
+    try {
+      await copyText(bookingNo);
+      setCopyError(false);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setCopied(false);
+      setCopyError(true);
+      window.setTimeout(() => setCopyError(false), 2500);
+    }
   };
 
   const isConfirmed = booking?.status === "confirmed";
@@ -159,11 +197,31 @@ function SuccessContent() {
               <button
                 type="button"
                 onClick={copyBookingNo}
-                className="mx-auto mt-5 inline-flex min-h-12 items-center gap-2 rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-900"
+                className={`mx-auto mt-5 inline-flex min-h-12 items-center gap-2 rounded-full border px-5 py-3 text-sm font-semibold transition ${
+                  copied
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                    : "border-stone-300 bg-white text-stone-700 hover:border-stone-900"
+                }`}
               >
-                <Copy size={16} />
+                {copied ? <Check size={16} /> : <Copy size={16} />}
                 {copied ? "คัดลอกแล้ว" : "คัดลอกเลขจอง"}
               </button>
+
+              {copied && (
+                <div
+                  role="status"
+                  className="mx-auto mt-4 flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700"
+                >
+                  <Check size={16} />
+                  คัดลอกเลขจองสำเร็จ
+                </div>
+              )}
+
+              {copyError && (
+                <p role="alert" className="mt-4 text-sm text-rose-600">
+                  คัดลอกไม่สำเร็จ กรุณากดค้างที่เลขจองเพื่อคัดลอก
+                </p>
+              )}
             </div>
           )}
 
