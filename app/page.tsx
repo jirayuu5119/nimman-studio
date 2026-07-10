@@ -1,4 +1,6 @@
 import Image from "next/image";
+import Link from "next/link";
+import { SearchCheck } from "lucide-react";
 import Feature from "@/components/Feature";
 import BookingButton from "@/components/BookingButton";
 
@@ -36,6 +38,14 @@ export default function Home() {
 
           <div className="mt-10 space-y-3">
             <BookingButton />
+
+            <Link
+              href="/booking/status"
+              className="flex w-full items-center justify-center gap-2 rounded-full border border-stone-300 bg-white px-6 py-4 text-sm font-semibold tracking-[0.12em] text-stone-700 transition hover:border-stone-900 hover:bg-stone-50"
+            >
+              <SearchCheck size={18} />
+              ตรวจสอบสถานะการจอง
+            </Link>
 
             <a
               href="https://line.me/ti/p/tEgkF7b0Vg"

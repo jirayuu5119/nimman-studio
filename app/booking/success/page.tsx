@@ -10,7 +10,7 @@ import {
   Copy,
   Home,
   Loader2,
-  Phone,
+  MessageCircle,
   RefreshCw,
   XCircle,
 } from "lucide-react";
@@ -177,11 +177,13 @@ function SuccessContent() {
             กลับหน้าแรก
           </Link>
           <a
-            href="tel:0929455119"
+            href="https://line.me/ti/p/tEgkF7b0Vg"
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex min-h-12 items-center justify-center gap-2 rounded-full border border-stone-300 bg-white px-6 py-4 text-sm font-semibold text-stone-700 transition hover:border-stone-900"
           >
-            <Phone size={18} />
-            ติดต่อช่างภาพ
+            <MessageCircle size={18} />
+            ติดต่อส่วนตัวผ่าน LINE
           </a>
           <Link
             href="/booking"

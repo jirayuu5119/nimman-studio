@@ -10,9 +10,14 @@ export async function POST() {
 
   if (error) {
     console.error("Page view insert error:", error);
+    return NextResponse.json(
+      { success: false, error: "บันทึกสถิติผู้เข้าชมไม่สำเร็จ" },
+      { status: 500 }
+    );
   }
 
-  return NextResponse.json({
-    success: true,
-  });
+  return NextResponse.json(
+    { success: true },
+    { headers: { "Cache-Control": "no-store" } }
+  );
 }

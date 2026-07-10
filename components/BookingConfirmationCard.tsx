@@ -299,7 +299,7 @@ const BookingConfirmationCard = forwardRef<HTMLDivElement, Props>(
           <div>
             <div style={{ fontSize: 18, color: "#746F67" }}>ติดต่อช่างภาพ</div>
             <div style={{ marginTop: 5, fontSize: 25, fontWeight: 700 }}>
-              เบอร์ติดต่อ : 092-9455119
+              เบอร์ติดต่อ : 092-9455119 k.บีท
             </div>
           </div>
           <p
