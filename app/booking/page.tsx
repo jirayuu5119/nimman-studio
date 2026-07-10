@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useBooking } from "@/context/BookingContext";
 import Calendar from "@/components/Calendar";
@@ -11,6 +12,7 @@ import {
   CalendarDays,
   Camera,
   Share2,
+  SearchCheck,
   Sunrise,
   Sunset,
 } from "lucide-react";
@@ -147,33 +149,39 @@ export default function BookingPage() {
             <br className="hidden md:block" />
             ระบบจะแสดงวันว่างและรอบที่จองได้แบบอัตโนมัติ
           </p>
-          {(siteSettings.instagramUrl || siteSettings.facebookUrl) && (
-            <div className="mt-6 flex flex-wrap justify-center gap-3">
-              {siteSettings.instagramUrl && (
-                <a
-                  href={siteSettings.instagramUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-900 hover:bg-stone-50"
-                >
-                  <Camera size={17} />
-                  ชมผลงาน IG
-                </a>
-              )}
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/booking/status"
+              className="inline-flex items-center gap-2 rounded-full border border-stone-900 bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white hover:text-stone-900"
+            >
+              <SearchCheck size={17} />
+              ตรวจสอบสถานะการจอง
+            </Link>
 
-              {siteSettings.facebookUrl && (
-                <a
-                  href={siteSettings.facebookUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-900 hover:bg-stone-50"
-                >
-                  <Share2 size={17} />
-                  ชมผลงาน Facebook
-                </a>
-              )}
-            </div>
-          )}
+            {siteSettings.instagramUrl && (
+              <a
+                href={siteSettings.instagramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-900 hover:bg-stone-50"
+              >
+                <Camera size={17} />
+                ชมผลงาน IG
+              </a>
+            )}
+
+            {siteSettings.facebookUrl && (
+              <a
+                href={siteSettings.facebookUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-900 hover:bg-stone-50"
+              >
+                <Share2 size={17} />
+                ชมผลงาน Facebook
+              </a>
+            )}
+          </div>
         </div>
 
         <div className="rounded-[2rem] border border-stone-200/80 bg-white/90 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.06)] backdrop-blur md:p-10">

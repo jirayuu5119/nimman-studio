@@ -129,31 +129,31 @@ export default function BookingInfoPage() {
               />
             </div>
 
-            <div>
+            <div className="min-w-0">
               <label className={labelClass}>มหาวิทยาลัย *</label>
-              <input
+              <select
                 name="university"
-                list="university-options"
                 value={booking.university}
                 onChange={handleChange}
-                placeholder="พิมพ์เพื่อค้นหามหาวิทยาลัย / วิทยาลัยพยาบาล"
-                className={inputClass}
-              />
-              <datalist id="university-options">
+                className={`${inputClass} min-w-0 truncate`}
+              >
+                <option value="">เลือกมหาวิทยาลัย / วิทยาลัยพยาบาล</option>
                 {UNIVERSITIES.map((university) => (
-                  <option key={university.name} value={university.name} />
+                  <option key={university.name} value={university.name}>
+                    {university.name}
+                  </option>
                 ))}
-              </datalist>
+              </select>
             </div>
 
-            <div>
+            <div className="min-w-0">
               <label className={labelClass}>คณะ *</label>
               <select
                 name="faculty"
                 value={booking.faculty}
                 onChange={handleChange}
                 disabled={!booking.university.trim()}
-                className={`${inputClass} disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400`}
+                className={`${inputClass} min-w-0 truncate disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400`}
               >
                 <option value="">เลือกคณะ</option>
 
