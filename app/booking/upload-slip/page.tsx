@@ -17,6 +17,10 @@ import {
 import { useBooking } from "@/context/BookingContext";
 import { PACKAGES } from "@/lib/packages";
 import { prepareSlipUpload } from "@/lib/prepareSlipUpload";
+import {
+  DEFAULT_PROMPTPAY_NUMBER,
+  DEFAULT_PROMPTPAY_QR_URL,
+} from "@/lib/payment-settings";
 
 const DEPOSIT_AMOUNT = 1000;
 
@@ -26,6 +30,11 @@ type CreateBookingResponse = {
   totalPrice?: number;
   depositAmount?: number;
   remainingAmount?: number;
+};
+
+type PaymentSettings = {
+  promptpayNumber: string;
+  promptpayQrUrl: string;
 };
 
 function formatDateLocal(date: Date) {
@@ -43,8 +52,10 @@ export default function UploadSlipPage() {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-
-  const realPromptPayNumber = "8302376723";
+  const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({
+    promptpayNumber: DEFAULT_PROMPTPAY_NUMBER,
+    promptpayQrUrl: DEFAULT_PROMPTPAY_QR_URL,
+  });
 
   const depositAmount = booking.depositAmount ?? DEPOSIT_AMOUNT;
   const packageInfo = PACKAGES[booking.hours];
@@ -69,8 +80,39 @@ export default function UploadSlipPage() {
     };
   }, [preview]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadPaymentSettings() {
+      try {
+        const response = await fetch("/api/site-settings", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const data = (await response.json()) as Partial<PaymentSettings>;
+        if (
+          typeof data.promptpayNumber === "string" &&
+          /^\d{10,15}$/.test(data.promptpayNumber) &&
+          typeof data.promptpayQrUrl === "string" &&
+          data.promptpayQrUrl
+        ) {
+          setPaymentSettings({
+            promptpayNumber: data.promptpayNumber,
+            promptpayQrUrl: data.promptpayQrUrl,
+          });
+        }
+      } catch {
+        // Keep the bundled PromptPay fallback when settings cannot be loaded.
+      }
+    }
+
+    loadPaymentSettings();
+    return () => controller.abort();
+  }, []);
+
   const copyPromptPay = async () => {
-    await navigator.clipboard.writeText(realPromptPayNumber);
+    await navigator.clipboard.writeText(paymentSettings.promptpayNumber);
     setCopied(true);
 
     setTimeout(() => {
@@ -273,11 +315,12 @@ export default function UploadSlipPage() {
 
                 <div className="mx-auto max-w-[260px] rounded-[1.25rem] border border-stone-200 bg-white p-3">
                   <Image
-                    src="/promptpay-qr.png"
+                    src={paymentSettings.promptpayQrUrl}
                     alt="PromptPay QR"
                     width={320}
                     height={320}
                     priority
+                    unoptimized
                     className="h-auto w-full rounded-xl"
                   />
                 </div>
@@ -288,7 +331,7 @@ export default function UploadSlipPage() {
                       PromptPay
                     </p>
                     <p className="mt-1 font-serif text-2xl font-semibold tracking-wide text-stone-900">
-                      {realPromptPayNumber}
+                      {paymentSettings.promptpayNumber}
                     </p>
                   </div>
 

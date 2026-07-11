@@ -1,7 +1,8 @@
 import Link from "next/link";
+import Image from "next/image";
 import ChangePasswordForm from "@/components/admin/ChangePasswordForm";
 import LogoutButton from "@/components/admin/LogoutButton";
-import { updatePortfolioLinks } from "./actions";
+import { updatePaymentSettings, updatePortfolioLinks } from "./actions";
 import RecentBookings from "./RecentBookings";
 import StatCard from "./StatCard";
 import RevenueChart from "./RevenueChart";
@@ -19,6 +20,8 @@ import {
   ExternalLink,
   Eye,
   Link2,
+  QrCode,
+  Upload,
 } from "lucide-react";
 
 const PAGE_SIZE = 10;
@@ -125,6 +128,13 @@ export default async function AdminPage({
 
   const analyticsBookings = (allBookingsResult.data ?? []) as AnalyticsBooking[];
   const siteSettingsData = siteSettings as SiteSettings;
+  const { data: promptpayQrSigned } = siteSettingsData.promptpay_qr_path
+    ? await supabase.storage
+        .from("site-config")
+        .createSignedUrl(siteSettingsData.promptpay_qr_path, 10 * 60)
+    : { data: null };
+  const promptpayQrPreview =
+    promptpayQrSigned?.signedUrl ?? "/promptpay-qr.png";
   const bookingViews24h = bookingViewsResult.count ?? 0;
 
   const analytics = {
@@ -347,6 +357,82 @@ export default async function AdminPage({
               <Link2 size={17} />
               บันทึกลิงก์
             </button>
+          </form>
+        </div>
+
+        <div className="mb-8 rounded-[2rem] border border-stone-200/80 bg-white/90 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.06)] backdrop-blur md:p-6">
+          <div className="mb-5 flex items-start gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-stone-100 text-stone-700">
+              <QrCode size={22} />
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.25em] text-stone-400">
+                การรับชำระเงิน
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-stone-900">
+                PromptPay และรูป QR รับโอน
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-stone-500">
+                แก้เลข PromptPay หรืออัปโหลดรูป QR ใหม่ รูปเดิมจะยังใช้งานต่อหากไม่ได้เลือกไฟล์ใหม่
+              </p>
+            </div>
+          </div>
+
+          <form
+            action={updatePaymentSettings}
+            className="grid gap-5 lg:grid-cols-[220px_1fr]"
+          >
+            <div className="overflow-hidden rounded-[1.5rem] border border-stone-200 bg-stone-50 p-3">
+              <Image
+                src={promptpayQrPreview}
+                alt="QR PromptPay ปัจจุบัน"
+                width={320}
+                height={320}
+                unoptimized
+                className="h-auto w-full rounded-xl bg-white object-contain"
+              />
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-stone-700">
+                  เลข PromptPay
+                </label>
+                <input
+                  name="promptpayNumber"
+                  inputMode="numeric"
+                  required
+                  minLength={10}
+                  maxLength={15}
+                  defaultValue={siteSettingsData.promptpay_number}
+                  placeholder="กรอกเลข PromptPay 10-15 หลัก"
+                  className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-stone-900 focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-stone-700">
+                  รูป QR / รูปรับโอนเงิน
+                </label>
+                <input
+                  name="promptpayQr"
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  className="block w-full rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600 file:mr-4 file:rounded-full file:border-0 file:bg-stone-900 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:border-stone-900"
+                />
+                <p className="mt-2 text-xs text-stone-400">
+                  รองรับ JPG หรือ PNG ขนาดไม่เกิน 3 MB
+                </p>
+              </div>
+
+              <button
+                type="submit"
+                className="inline-flex h-[46px] items-center justify-center gap-2 rounded-full border border-stone-900 bg-stone-900 px-6 text-sm font-semibold text-white transition hover:bg-white hover:text-stone-900"
+              >
+                <Upload size={17} />
+                บันทึกข้อมูลการรับเงิน
+              </button>
+            </div>
           </form>
         </div>
 

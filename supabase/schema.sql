@@ -93,6 +93,8 @@ create table if not exists public.site_settings (
         check (id = 1),
     instagram_url text,
     facebook_url text,
+    promptpay_number text default '8302376723',
+    promptpay_qr_path text,
     updated_at timestamptz not null default now()
 );
 

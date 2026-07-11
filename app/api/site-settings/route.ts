@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSiteSettings } from "@/lib/siteSettings";
 import { getRequestId, logServerError } from "@/lib/security/request";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { DEFAULT_PROMPTPAY_QR_URL } from "@/lib/payment-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -8,11 +10,23 @@ export async function GET(request: Request) {
   const requestId = getRequestId(request);
 
   try {
-    const settings = await getSiteSettings();
+    const supabase = createAdminClient();
+    const settings = await getSiteSettings(supabase);
+    let promptpayQrUrl = DEFAULT_PROMPTPAY_QR_URL;
+
+    if (settings.promptpay_qr_path) {
+      const { data } = await supabase.storage
+        .from("site-config")
+        .createSignedUrl(settings.promptpay_qr_path, 60 * 60);
+      if (data?.signedUrl) promptpayQrUrl = data.signedUrl;
+    }
+
     return NextResponse.json(
       {
         instagramUrl: settings.instagram_url ?? "",
         facebookUrl: settings.facebook_url ?? "",
+        promptpayNumber: settings.promptpay_number,
+        promptpayQrUrl,
       },
       { headers: { "Cache-Control": "no-store" } }
     );

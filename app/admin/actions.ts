@@ -1,11 +1,15 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createServerAuthClient } from "@/lib/supabase/server-auth";
 import { parseAllowedSiteUrl } from "@/lib/site-url";
 import { isBookableDate } from "@/lib/booking-rules";
+import { detectValidSlipType } from "@/lib/slip-validation";
+import { getSiteSettings } from "@/lib/siteSettings";
+import { normalizePromptPayNumber } from "@/lib/payment-settings";
 
 type BookingPeriod = "morning" | "afternoon";
 type AdminBookingStatus = "confirmed" | "cancelled" | "completed";
@@ -97,6 +101,70 @@ export async function updatePortfolioLinks(formData: FormData) {
   if (error) throw new Error("SITE_SETTINGS_UPDATE_FAILED");
   revalidatePath("/admin");
   revalidatePath("/booking");
+}
+
+const MAX_PROMPTPAY_QR_SIZE = 3_000_000;
+
+export async function updatePaymentSettings(formData: FormData) {
+  const admin = await requireAdmin();
+  const promptpayNumber = normalizePromptPayNumber(
+    formData.get("promptpayNumber")
+  );
+  const qrFile = formData.get("promptpayQr");
+  const supabase = createAdminClient();
+  const currentSettings = await getSiteSettings(supabase);
+  let nextQrPath = currentSettings.promptpay_qr_path;
+  let uploadedPath: string | null = null;
+
+  if (qrFile instanceof File && qrFile.size > 0) {
+    if (qrFile.size > MAX_PROMPTPAY_QR_SIZE) {
+      throw new Error("PROMPTPAY_QR_TOO_LARGE");
+    }
+
+    const buffer = Buffer.from(await qrFile.arrayBuffer());
+    const detected = await detectValidSlipType(buffer);
+    if (!detected || !["jpg", "png"].includes(detected.ext)) {
+      throw new Error("INVALID_PROMPTPAY_QR_FILE");
+    }
+
+    uploadedPath = `payments/promptpay-${randomUUID()}.${detected.ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from("site-config")
+      .upload(uploadedPath, buffer, {
+        contentType: detected.mime,
+        cacheControl: "3600",
+        upsert: false,
+      });
+    if (uploadError) throw new Error("PROMPTPAY_QR_UPLOAD_FAILED");
+    nextQrPath = uploadedPath;
+  }
+
+  const { error } = await supabase.rpc("update_payment_settings_atomic", {
+    p_promptpay_number: promptpayNumber,
+    p_promptpay_qr_path: nextQrPath,
+    p_actor_user_id: admin.userId,
+  });
+
+  if (error) {
+    if (uploadedPath) {
+      await supabase.storage.from("site-config").remove([uploadedPath]);
+    }
+    throw new Error("PAYMENT_SETTINGS_UPDATE_FAILED");
+  }
+
+  if (
+    uploadedPath &&
+    currentSettings.promptpay_qr_path &&
+    currentSettings.promptpay_qr_path !== uploadedPath
+  ) {
+    await supabase.storage
+      .from("site-config")
+      .remove([currentSettings.promptpay_qr_path]);
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/booking/upload-slip");
+  revalidatePath("/api/site-settings");
 }
 
 
