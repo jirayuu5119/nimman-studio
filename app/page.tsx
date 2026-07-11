@@ -3,6 +3,9 @@ import Link from "next/link";
 import { SearchCheck } from "lucide-react";
 import Feature from "@/components/Feature";
 import BookingButton from "@/components/BookingButton";
+import BookingQrDialog from "@/components/BookingQrDialog";
+
+const bookingUrl = "https://grad.jirayufoto.net/";
 
 export default function Home() {
   return (
@@ -46,6 +49,8 @@ export default function Home() {
               <SearchCheck size={18} />
               ตรวจสอบสถานะการจอง
             </Link>
+
+            <BookingQrDialog bookingUrl={bookingUrl} />
 
             <a
               href="https://line.me/ti/p/tEgkF7b0Vg"

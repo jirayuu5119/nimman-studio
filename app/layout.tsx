@@ -15,12 +15,12 @@ const geistMono = Geist_Mono({
 
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ??
-  "https://nimman-studio-swart.vercel.app";
+  "https://grad.jirayufoto.net";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Nimman Foto | จองคิวถ่ายภาพ",
+    default: "Nimman Foto | จองคิวออนไลน์",
     template: "%s | Nimman Foto",
   },
   description:
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     locale: "th_TH",
     url: "/",
     siteName: "Nimman Foto",
-    title: "Nimman Foto | จองคิวถ่ายภาพวันสำคัญ",
+    title: "Nimman Foto | จองคิวออนไลน์",
     description:
       "รับปริญญา · รับทรานสคริป · จบพยาบาล เลือกวันและรอบว่างได้ทันที",
     images: [
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Nimman Foto | จองคิวถ่ายภาพวันสำคัญ",
+    title: "Nimman Foto | จองคิวออนไลน์",
     description:
       "รับปริญญา · รับทรานสคริป · จบพยาบาล เลือกวันและรอบว่างได้ทันที",
     images: ["/nimman-foto-booking-share.png"],
