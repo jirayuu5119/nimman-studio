@@ -6,12 +6,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useBooking } from "@/context/BookingContext";
 import Calendar from "@/components/Calendar";
+import FloatingSocialLinks from "@/components/FloatingSocialLinks";
 import HourSelector from "@/components/HourSelector";
 import GraduateSelector from "@/components/GraduateSelector";
 import {
   CalendarDays,
-  Camera,
-  Share2,
   SearchCheck,
   Sunrise,
   Sunset,
@@ -122,6 +121,11 @@ export default function BookingPage() {
 
   return (
     <main className="min-h-screen bg-[#f8f5f0] px-5 py-8 text-stone-900 md:py-12">
+      <FloatingSocialLinks
+        instagramUrl={siteSettings.instagramUrl}
+        facebookUrl={siteSettings.facebookUrl}
+      />
+
       <div className="mx-auto max-w-6xl">
         <div className="mb-10 text-center">
           <p className="text-xs font-medium uppercase tracking-[0.35em] text-stone-400">
@@ -157,29 +161,6 @@ export default function BookingPage() {
               ตรวจสอบสถานะการจอง
             </Link>
 
-            {siteSettings.instagramUrl && (
-              <a
-                href={siteSettings.instagramUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-900 hover:bg-stone-50"
-              >
-                <Camera size={17} />
-                ชมผลงาน IG
-              </a>
-            )}
-
-            {siteSettings.facebookUrl && (
-              <a
-                href={siteSettings.facebookUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-900 hover:bg-stone-50"
-              >
-                <Share2 size={17} />
-                ชมผลงาน Facebook
-              </a>
-            )}
           </div>
         </div>
 
