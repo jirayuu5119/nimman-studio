@@ -3,6 +3,12 @@ import { buildBookingCreatedMessage } from "@/lib/notifications/format-booking";
 import { normalizeRateLimitResult } from "@/lib/security/rate-limit-result";
 import { parseAllowedSiteUrl } from "@/lib/site-url";
 import { detectValidSlipType } from "@/lib/slip-validation";
+import { createCsv, escapeCsvCell } from "@/lib/csv";
+import { getClientIpFromHeaders } from "@/lib/security/client-ip";
+import {
+  normalizeAdminBookingSearch,
+  normalizeAdminBookingStatus,
+} from "@/lib/admin-booking-filters";
 
 describe("file signatures", () => {
   it("detects JPEG and PNG from magic bytes", async () => {
@@ -63,5 +69,51 @@ describe("rate limit decisions", () => {
       allowed: false,
       retryAfter: 42,
     });
+  });
+
+  it("uses the trusted client IP without creating quotas per user-agent", () => {
+    const first = new Headers({
+      "x-vercel-forwarded-for": "203.0.113.10",
+      "user-agent": "agent-one",
+    });
+    const second = new Headers({
+      "x-vercel-forwarded-for": "203.0.113.10",
+      "user-agent": "agent-two",
+    });
+
+    expect(getClientIpFromHeaders(first)).toBe("203.0.113.10");
+    expect(getClientIpFromHeaders(second)).toBe("203.0.113.10");
+  });
+
+  it("rejects malformed forwarded addresses", () => {
+    expect(
+      getClientIpFromHeaders(new Headers({ "x-forwarded-for": "spoofed" }))
+    ).toBe("unknown");
+  });
+});
+
+describe("CSV export security", () => {
+  it("neutralizes spreadsheet formulas while preserving CSV quoting", () => {
+    expect(escapeCsvCell("=HYPERLINK(\"https://evil.test\")")).toBe(
+      '"\'=HYPERLINK(""https://evil.test"")"'
+    );
+    expect(escapeCsvCell("+1+1")).toBe('"\'+1+1"');
+    expect(escapeCsvCell("normal \"name\"")).toBe('"normal ""name"""');
+  });
+
+  it("uses CRLF rows for spreadsheet compatibility", () => {
+    expect(createCsv(["name"], [["Alice"], ["Bob"]])).toBe(
+      '"name"\r\n"Alice"\r\n"Bob"'
+    );
+  });
+});
+
+describe("admin booking filters", () => {
+  it("supports every dashboard status and strips query syntax", () => {
+    expect(normalizeAdminBookingStatus("draft")).toBe("draft");
+    expect(normalizeAdminBookingStatus("unexpected")).toBe("all");
+    expect(normalizeAdminBookingSearch("Alice,(status.eq.paid)")).toBe(
+      "Alice  status.eq.paid"
+    );
   });
 });

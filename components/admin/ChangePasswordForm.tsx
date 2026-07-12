@@ -30,16 +30,20 @@ export default function ChangePasswordForm() {
     }
 
     try {
-      await changeAdminPassword(password);
+      const result = await changeAdminPassword(password);
+      setPassword("");
+      setConfirmPassword("");
+      setMessage(
+        result.auditRecorded
+          ? "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว"
+          : "เปลี่ยนรหัสผ่านแล้ว แต่บันทึก audit log ไม่สำเร็จ กรุณาแจ้งผู้ดูแลระบบ"
+      );
     } catch {
       setError("เปลี่ยนรหัสผ่านไม่สำเร็จ กรุณาเข้าสู่ระบบใหม่แล้วลองอีกครั้ง");
       setLoading(false);
       return;
     }
 
-    setPassword("");
-    setConfirmPassword("");
-    setMessage("เปลี่ยนรหัสผ่านเรียบร้อยแล้ว");
     setLoading(false);
   }
 

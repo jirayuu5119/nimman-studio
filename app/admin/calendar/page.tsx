@@ -126,8 +126,14 @@ export default async function AdminCalendarPage({
 
   const now = new Date();
 
-  const year = Number(params.year ?? now.getFullYear());
-  const month = Number(params.month ?? now.getMonth() + 1) - 1;
+  const requestedYear = Number(params.year ?? now.getFullYear());
+  const requestedMonth = Number(params.month ?? now.getMonth() + 1);
+  const year = Number.isInteger(requestedYear) && requestedYear >= 2020 && requestedYear <= 2100
+    ? requestedYear
+    : now.getFullYear();
+  const month = Number.isInteger(requestedMonth) && requestedMonth >= 1 && requestedMonth <= 12
+    ? requestedMonth - 1
+    : now.getMonth();
 
   const firstDay = new Date(year, month, 1);
   const startWeekday = firstDay.getDay();

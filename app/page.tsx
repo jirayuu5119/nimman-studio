@@ -18,14 +18,17 @@ export default function Home() {
             </p>
 
             <div className="mt-5 flex justify-center">
-              <Image
-                src="/nimman-logo.png"
-                alt="Nimman Foto"
-                width={420}
-                height={160}
-                priority
-                className="h-auto w-[280px] md:w-[380px]"
-              />
+              <div className="w-[280px] md:w-[380px]">
+                <Image
+                  src="/nimman-logo.png"
+                  alt="Nimman Foto"
+                  width={420}
+                  height={195}
+                  priority
+                  style={{ width: "100%", height: "auto" }}
+                  className="h-auto w-full"
+                />
+              </div>
             </div>
 
             <p className="mx-auto mt-6 max-w-sm text-sm leading-7 text-stone-500">

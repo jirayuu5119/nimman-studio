@@ -1,0 +1,2 @@
+-- Intentionally empty. Production data and admin accounts must never be seeded.
+-- Create local test users explicitly in database tests when required.

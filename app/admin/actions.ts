@@ -189,5 +189,5 @@ export async function changeAdminPassword(password: string) {
     action: "password_changed",
     actor_user_id: admin.userId,
   });
-  if (auditError) throw new Error("บันทึกเหตุการณ์ความปลอดภัยไม่สำเร็จ");
+  return { passwordUpdated: true, auditRecorded: !auditError };
 }

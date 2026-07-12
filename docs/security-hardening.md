@@ -55,8 +55,9 @@ only until `LEGACY_BOOKING_TOKEN_ACCEPT_UNTIL`, then exchanged for a cookie.
 ## Rate limiting
 
 Rate limits use the `api_rate_limits` table and an atomic Postgres function. The
-client identity is HMAC-hashed with `RATE_LIMIT_HASH_SECRET`; raw IP values are
-not stored or logged. Lookup is limited to 6 requests per 10 minutes per client.
+platform-provided client IP is HMAC-hashed with `RATE_LIMIT_HASH_SECRET`; raw IP
+values are not stored or logged. User-Agent is intentionally excluded because it
+is attacker-controlled. Lookup is limited to 6 requests per 10 minutes per IP.
 
 ## Discord outbox and retry
 
@@ -114,8 +115,9 @@ Set these in Vercel only; do not commit values:
 3. Deploy the compatible application and verify availability, create, lookup, and admin flows.
 4. Verify every legacy slip has a matching `slip_path` object.
 5. Apply `20260710084436_production_security_hardening.sql` to close public access and make slips private.
-6. Configure environment variables and Vercel Cron.
-7. Run smoke and security checks without creating a fake production booking.
+6. Apply later migrations, including dashboard aggregation, private bucket enforcement, and explicit service-role grants.
+7. Configure environment variables and Vercel Cron.
+8. Run smoke and security checks without creating a fake production booking.
 
 ## Recovery and rollback
 
@@ -147,6 +149,8 @@ as an object path or log value.
 - Direct public slip URLs fail after the stage 2 migration.
 - New success URLs contain only `bookingNo`, never a new access token.
 - Availability and create use the same occupying statuses.
+- `supabase db reset` succeeds from a clean local stack.
+- RLS integration tests connect successfully before checking permission-denied errors.
 - `npm run lint`, `npm run typecheck`, `npm run test`, `npm run test:integration`, and `npm run build` pass.
 - E2E smoke tests run against a dedicated non-production URL with `E2E_BASE_URL`.
 - Production verification never creates fake customer bookings or sends fake Discord notifications.

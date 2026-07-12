@@ -1,6 +1,7 @@
 import "server-only";
 
 import { randomUUID } from "node:crypto";
+import { getClientIpFromHeaders } from "@/lib/security/client-ip";
 
 export function getRequestId(request: Request) {
   const incoming = request.headers.get("x-request-id");
@@ -10,11 +11,7 @@ export function getRequestId(request: Request) {
 }
 
 export function getClientIp(request: Request) {
-  return (
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip")?.trim() ||
-    "unknown"
-  );
+  return getClientIpFromHeaders(request.headers);
 }
 
 export function logServerError(event: string, requestId: string, code: string) {

@@ -11,8 +11,9 @@ export async function consumeRateLimit(
   limit: number,
   windowSeconds: number
 ) {
-  const userAgent = request.headers.get("user-agent")?.slice(0, 200) ?? "";
-  const keyHash = hashRateLimitKey(`${getClientIp(request)}|${userAgent}`);
+  // The User-Agent is attacker-controlled and must not create a fresh quota.
+  // Rate-limit primarily by the platform-provided client IP.
+  const keyHash = hashRateLimitKey(getClientIp(request));
   const supabase = createAdminClient();
   const { data, error } = await supabase.rpc("consume_rate_limit", {
     p_scope: scope,

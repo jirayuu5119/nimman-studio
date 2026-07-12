@@ -5,12 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Booking } from "@/types/booking";
 import StatusBadge from "./StatusBadge";
-import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
 import {
   Search,
   Download,
-  FileSpreadsheet,
   ChevronLeft,
   ChevronRight,
   Eye,
@@ -33,11 +30,6 @@ function displayTime(b: Booking) {
   }
 
   return b.period === "morning" ? "รอบเช้า" : "รอบบ่าย";
-}
-
-function escapeCsvCell(value: string | number | null | undefined) {
-  const text = String(value ?? "");
-  return `"${text.replace(/"/g, '""')}"`;
 }
 
 export default function AdminTable({
@@ -94,87 +86,15 @@ export default function AdminTable({
     router.push(`/admin?${params.toString()}`);
   };
 
-  const exportCSV = () => {
-    const headers = [
-      "เลขจอง",
-      "ลูกค้า",
-      "เบอร์โทร",
-      "วันที่",
-      "เวลา",
-      "ราคาเต็ม",
-      "มัดจำ",
-      "ยอดคงเหลือ",
-      "สถานะ",
-      "มีสลิป",
-    ];
-
-    const rows = bookings.map((b) => [
-      b.booking_no,
-      b.fullname,
-      b.phone,
-      b.booking_date,
-      displayTime(b),
-      b.total_price ?? 0,
-      b.deposit_amount ?? 0,
-      b.remaining_amount ?? 0,
-      b.status,
-      b.slip_path || b.slip_url ? "มี" : "ไม่มี",
-    ]);
-
-    const csv = [
-      headers.map(escapeCsvCell).join(","),
-      ...rows.map((r) => r.map(escapeCsvCell).join(",")),
-    ].join("\n");
-
-    const blob = new Blob([csv], {
-      type: "text/csv;charset=utf-8;",
-    });
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-
-    a.href = url;
-    a.download = "bookings.csv";
-    a.click();
-
-    URL.revokeObjectURL(url);
-  };
-
-  const exportExcel = () => {
-    const data = bookings.map((b) => ({
-      เลขจอง: b.booking_no,
-      ลูกค้า: b.fullname,
-      เบอร์โทร: b.phone,
-      วันที่: b.booking_date,
-      เวลา: displayTime(b),
-      ราคาเต็ม: b.total_price ?? 0,
-      มัดจำ: b.deposit_amount ?? 0,
-      ยอดคงเหลือ: b.remaining_amount ?? 0,
-      สถานะ: b.status,
-      มีสลิป: b.slip_path || b.slip_url ? "มี" : "ไม่มี",
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(wb, ws, "Bookings");
-
-    const excelBuffer = XLSX.write(wb, {
-      bookType: "xlsx",
-      type: "array",
-    });
-
-    const blob = new Blob([excelBuffer], {
-      type: "application/octet-stream",
-    });
-
-    saveAs(blob, "bookings.xlsx");
-  };
+  const exportParams = new URLSearchParams();
+  if (search.trim()) exportParams.set("q", search.trim());
+  if (status !== "all") exportParams.set("status", status);
+  const exportUrl = `/api/admin/bookings/export?${exportParams.toString()}`;
 
   return (
     <section className="space-y-6">
       <div className="rounded-[1.5rem] border border-stone-200 bg-white/90 p-4 shadow-[0_12px_40px_rgba(0,0,0,0.04)]">
-        <div className="grid gap-3 lg:grid-cols-[1fr_180px_auto_auto]">
+        <div className="grid gap-3 lg:grid-cols-[1fr_180px_auto]">
           <div className="relative">
             <Search
               size={18}
@@ -203,21 +123,13 @@ export default function AdminTable({
             <option value="draft">แบบร่าง</option>
           </select>
 
-          <button
-            onClick={exportCSV}
+          <a
+            href={exportUrl}
             className="inline-flex items-center justify-center gap-2 rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-900"
           >
             <Download size={17} />
-            CSV
-          </button>
-
-          <button
-            onClick={exportExcel}
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-stone-900 bg-stone-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white hover:text-stone-900"
-          >
-            <FileSpreadsheet size={17} />
-            Excel
-          </button>
+            CSV ทั้งหมด
+          </a>
         </div>
       </div>
 

@@ -133,14 +133,17 @@ export default function BookingPage() {
 </p>
 
 <div className="mt-5 flex justify-center">
-  <Image
-    src="/nimman-logo.png"
-    alt="Nimman Foto"
-    width={420}
-    height={160}
-    priority
-    className="h-auto w-[280px] md:w-[420px]"
-  />
+  <div className="w-[280px] md:w-[420px]">
+    <Image
+      src="/nimman-logo.png"
+      alt="Nimman Foto"
+      width={420}
+      height={195}
+      priority
+      style={{ width: "100%", height: "auto" }}
+      className="h-auto w-full"
+    />
+  </div>
 </div>
 
 <h1 className="mt-6 font-serif text-3xl font-semibold tracking-tight text-stone-900 md:text-4xl">

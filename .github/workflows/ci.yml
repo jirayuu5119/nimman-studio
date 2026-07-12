@@ -12,9 +12,6 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     env:
-      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
-      SUPABASE_SERVICE_ROLE_KEY: ci-service-role-key
       RATE_LIMIT_HASH_SECRET: ci-rate-limit-secret-with-at-least-32-bytes
 
     steps:
@@ -24,6 +21,15 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Start local Supabase and verify migrations
+        run: |
+          npx --yes supabase@2.109.1 start
+          npx --yes supabase@2.109.1 db reset
+          eval "$(npx --yes supabase@2.109.1 status -o env)"
+          echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
+          echo "RUN_SUPABASE_INTEGRATION=1" >> "$GITHUB_ENV"
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test
@@ -33,4 +39,4 @@ jobs:
       - run: npm run test:e2e
         env:
           RUN_E2E: "1"
-      - run: npm audit --audit-level=high || true
+      - run: npm audit --omit=dev --audit-level=high

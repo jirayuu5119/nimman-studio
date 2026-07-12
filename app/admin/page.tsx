@@ -7,6 +7,10 @@ import RecentBookings from "./RecentBookings";
 import StatCard from "./StatCard";
 import RevenueChart from "./RevenueChart";
 import AdminTable from "./AdminTable";
+import {
+  normalizeAdminBookingSearch,
+  normalizeAdminBookingStatus,
+} from "@/lib/admin-booking-filters";
 import { getSiteSettings, type SiteSettings } from "@/lib/siteSettings";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Booking } from "@/types/booking";
@@ -25,29 +29,49 @@ import {
 } from "lucide-react";
 
 const PAGE_SIZE = 10;
-const REVENUE_STATUSES = ["paid", "confirmed", "completed"];
+type ChartItem = { date: string; revenue: number };
 
-type AnalyticsBooking = {
-  status: string | null;
-  total_price: number | null;
-  booking_date: string | null;
+type DashboardAnalytics = {
+  totalRevenue: number;
+  totalBookings: number;
+  pending: number;
+  paid: number;
+  confirmed: number;
+  completed: number;
+  cancelled: number;
+  today: number;
+  thisMonth: number;
+  chartData: ChartItem[];
 };
 
-function getBangkokDateParts(date: Date) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Bangkok",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-
-  const year = parts.find((part) => part.type === "year")?.value ?? "";
-  const month = parts.find((part) => part.type === "month")?.value ?? "";
-  const day = parts.find((part) => part.type === "day")?.value ?? "";
+function normalizeDashboardAnalytics(value: unknown): DashboardAnalytics {
+  const data = value && typeof value === "object" ? value as Record<string, unknown> : {};
+  const numberValue = (key: string) => {
+    const parsed = Number(data[key]);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+  const chartData = Array.isArray(data.chartData)
+    ? data.chartData.flatMap((item) => {
+        if (!item || typeof item !== "object") return [];
+        const row = item as Record<string, unknown>;
+        const revenue = Number(row.revenue);
+        return typeof row.date === "string" && Number.isFinite(revenue)
+          ? [{ date: row.date, revenue }]
+          : [];
+      })
+    : [];
 
   return {
-    dateKey: `${year}-${month}-${day}`,
-    monthKey: `${year}-${month}`,
+    totalRevenue: numberValue("totalRevenue"),
+    totalBookings: numberValue("totalBookings"),
+    pending: numberValue("pending"),
+    paid: numberValue("paid"),
+    confirmed: numberValue("confirmed"),
+    completed: numberValue("completed"),
+    cancelled: numberValue("cancelled"),
+    today: numberValue("today"),
+    thisMonth: numberValue("thisMonth"),
+    chartData,
   };
 }
 
@@ -62,22 +86,12 @@ export default async function AdminPage({
 }) {
   const params = await searchParams;
 
-  const page = Math.max(1, Number(params.page ?? 1));
-  const q = (params.q ?? "")
-    .replace(/[^\p{L}\p{N}\s@._+\-]/gu, " ")
-    .trim()
-    .slice(0, 100);
-  const allowedStatuses = new Set([
-    "all",
-    "pending",
-    "paid",
-    "confirmed",
-    "completed",
-    "cancelled",
-  ]);
-  const status = allowedStatuses.has(params.status ?? "all")
-    ? params.status ?? "all"
-    : "all";
+  const requestedPage = Number(params.page ?? 1);
+  const page = Number.isSafeInteger(requestedPage) && requestedPage > 0
+    ? Math.min(requestedPage, 100_000)
+    : 1;
+  const q = normalizeAdminBookingSearch(params.q);
+  const status = normalizeAdminBookingStatus(params.status);
 
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
@@ -98,22 +112,20 @@ export default async function AdminPage({
     query = query.eq("status", status);
   }
 
-  const { data: bookings, count } = await query
+  const { data: bookings, count, error: bookingsError } = await query
     .order("created_at", { ascending: false })
     .range(from, to);
+
+  if (bookingsError) throw bookingsError;
 
   const bookingList = (bookings ?? []) as Booking[];
   const bookingViewsSinceDate = new Date();
   bookingViewsSinceDate.setHours(bookingViewsSinceDate.getHours() - 24);
   const bookingViewsSince = bookingViewsSinceDate.toISOString();
 
-  const [allBookingsResult, siteSettings, bookingViewsResult] =
+  const [analyticsResult, siteSettings, bookingViewsResult] =
     await Promise.all([
-      supabase
-        .from("bookings")
-        .select("status,total_price,booking_date")
-        .order("booking_date", { ascending: true })
-        .range(0, 9999),
+      supabase.rpc("get_booking_dashboard_analytics"),
       getSiteSettings(supabase),
       supabase
         .from("page_visitors")
@@ -122,11 +134,9 @@ export default async function AdminPage({
         .gte("last_seen_at", bookingViewsSince),
     ]);
 
-  if (allBookingsResult.error) {
-    throw allBookingsResult.error;
-  }
+  if (analyticsResult.error) throw analyticsResult.error;
 
-  const analyticsBookings = (allBookingsResult.data ?? []) as AnalyticsBooking[];
+  const analytics = normalizeDashboardAnalytics(analyticsResult.data);
   const siteSettingsData = siteSettings as SiteSettings;
   const { data: promptpayQrSigned } = siteSettingsData.promptpay_qr_path
     ? await supabase.storage
@@ -137,73 +147,7 @@ export default async function AdminPage({
     promptpayQrSigned?.signedUrl ?? "/promptpay-qr.png";
   const bookingViews24h = bookingViewsResult.count ?? 0;
 
-  const analytics = {
-    totalRevenue: 0,
-    totalBookings: analyticsBookings.length,
-    pending: 0,
-    paid: 0,
-    confirmed: 0,
-    completed: 0,
-    cancelled: 0,
-    today: 0,
-    thisMonth: 0,
-  };
-
-  const { dateKey: todayKey, monthKey: thisMonthKey } =
-    getBangkokDateParts(new Date());
-
-  analyticsBookings.forEach((b) => {
-    const bookingDate = b.booking_date ?? "";
-
-    if (b.status && REVENUE_STATUSES.includes(b.status)) {
-      analytics.totalRevenue += b.total_price ?? 0;
-    }
-
-    if (b.status === "pending") analytics.pending++;
-    if (b.status === "paid") analytics.paid++;
-    if (b.status === "confirmed") analytics.confirmed++;
-    if (b.status === "completed") analytics.completed++;
-    if (b.status === "cancelled") analytics.cancelled++;
-
-    if (bookingDate === todayKey) {
-      analytics.today++;
-    }
-
-    if (bookingDate.startsWith(thisMonthKey)) {
-      analytics.thisMonth++;
-    }
-  });
-
-  type ChartItem = {
-    date: string;
-    revenue: number;
-  };
-
-  const chartData = Object.values(
-    analyticsBookings.reduce<Record<string, ChartItem>>((acc, b) => {
-      const date = b.booking_date;
-
-      if (!date) {
-        return acc;
-      }
-
-      if (!acc[date]) {
-        acc[date] = {
-          date,
-          revenue: 0,
-        };
-      }
-
-      if (b.status && REVENUE_STATUSES.includes(b.status)) {
-        acc[date].revenue += b.total_price ?? 0;
-      }
-
-      return acc;
-    }, {})
-  ).sort(
-    (a, b) =>
-      new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
+  const chartData = analytics.chartData;
 
   return (
     <main className="min-h-screen bg-[#f8f5f0] px-5 py-8 text-stone-900 md:px-8 md:py-10">

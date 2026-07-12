@@ -8,6 +8,54 @@
 
 create extension if not exists pgcrypto;
 
+-- Fresh-install baseline. These tables predate migration tracking in the
+-- production project, so define them idempotently before applying hardening.
+create table if not exists public.bookings (
+  id uuid primary key default gen_random_uuid(),
+  booking_no text not null unique,
+  fullname text not null,
+  phone text not null,
+  line text,
+  facebook text,
+  university text,
+  faculty text,
+  booking_date date not null,
+  period text not null check (period in ('morning', 'afternoon')),
+  hours integer not null check (hours in (3, 4)),
+  graduates integer not null default 1,
+  total_price integer not null default 0,
+  note text,
+  slip_url text,
+  status text not null default 'pending'
+    check (status in ('draft', 'pending', 'paid', 'confirmed', 'completed', 'cancelled')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_booking_date on public.bookings (booking_date);
+create index if not exists idx_status on public.bookings (status);
+
+create table if not exists public.blocked_slots (
+  id uuid primary key default gen_random_uuid(),
+  booking_date date not null,
+  period text not null check (period in ('morning', 'afternoon')),
+  reason text,
+  created_at timestamptz not null default now(),
+  unique (booking_date, period)
+);
+
+create index if not exists idx_blocked_slots_booking_date
+on public.blocked_slots (booking_date);
+
+create table if not exists public.page_views (
+  id uuid primary key default gen_random_uuid(),
+  page text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_page_views_page_created_at
+on public.page_views (page, created_at desc);
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -18,6 +66,11 @@ begin
   return new;
 end;
 $$;
+
+drop trigger if exists bookings_set_updated_at on public.bookings;
+create trigger bookings_set_updated_at
+before update on public.bookings
+for each row execute function public.set_updated_at();
 
 create table if not exists public.admin_users (
   user_id uuid primary key references auth.users(id) on delete cascade,
@@ -296,6 +349,7 @@ end;
 $$;
 
 drop index if exists public.unique_active_booking_slot;
+drop index if exists public.unique_occupying_booking_slot;
 create unique index unique_occupying_booking_slot
 on public.bookings (booking_date, period)
 where status in ('pending', 'paid', 'confirmed', 'completed');
