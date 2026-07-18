@@ -10,6 +10,7 @@ import { isBookableDate } from "@/lib/booking-rules";
 import { detectValidSlipType } from "@/lib/slip-validation";
 import { getSiteSettings } from "@/lib/siteSettings";
 import { normalizePromptPayNumber } from "@/lib/payment-settings";
+import { validateAdminPassword } from "@/lib/auth/password-policy";
 
 type BookingPeriod = "morning" | "afternoon";
 type AdminBookingStatus = "confirmed" | "cancelled" | "completed";
@@ -170,12 +171,8 @@ export async function updatePaymentSettings(formData: FormData) {
 
 export async function changeAdminPassword(password: string) {
   const admin = await requireAdmin();
-  if (
-    typeof password !== "string" ||
-    password.length < 12 ||
-    password.length > 128
-  ) {
-    throw new Error("รหัสผ่านต้องมี 12-128 ตัวอักษร");
+  if (typeof password !== "string" || validateAdminPassword(password)) {
+    throw new Error("รหัสผ่านไม่ผ่านนโยบายความปลอดภัย");
   }
 
   const authClient = await createServerAuthClient();

@@ -42,6 +42,97 @@ test("booking page is reachable and admin is protected", async ({ page }) => {
   await expect(page).toHaveURL(/\/login$/);
 });
 
+test("password recovery pages are reachable and reject a missing token", async ({
+  page,
+}) => {
+  await page.goto("/login/forgot-password");
+  await expect(page.getByRole("heading", { name: "ลืมรหัสผ่าน" })).toBeVisible();
+
+  await page.goto("/login/update-password");
+  await expect(page.getByRole("heading", { name: "ลิงก์ใช้ไม่ได้" })).toBeVisible();
+});
+
+test("administrator can reset a forgotten password through the recovery email", async ({
+  page,
+}) => {
+  test.skip(
+    Boolean(process.env.E2E_BASE_URL),
+    "The recovery email flow runs only against local Mailpit"
+  );
+  if (!serviceClient) throw new Error("Local E2E service client is unavailable");
+
+  const suffix = Date.now().toString();
+  const email = `recovery-${suffix}@example.com`;
+  const oldPassword = "OldPassword1!";
+  const newPassword = "NewPassword2@";
+  const created = await serviceClient.auth.admin.createUser({
+    email,
+    password: oldPassword,
+    email_confirm: true,
+  });
+  expect(created.error).toBeNull();
+  const userId = created.data.user?.id;
+  expect(userId).toEqual(expect.any(String));
+
+  try {
+    await page.goto("/login/forgot-password");
+    await page.getByLabel("Email").fill(email);
+    await page.getByRole("button", { name: "ส่งลิงก์ตั้งรหัสผ่านใหม่" }).click();
+    await expect(page.getByText(/ระบบได้ส่งลิงก์รีเซ็ตแล้ว/)).toBeVisible();
+
+    const mailpitUrl = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324";
+    let recoveryUrl = "";
+    await expect
+      .poll(
+        async () => {
+          const summaryResponse = await fetch(`${mailpitUrl}/api/v1/messages`);
+          const summary = (await summaryResponse.json()) as {
+            messages: Array<{
+              ID: string;
+              To: Array<{ Address: string }>;
+            }>;
+          };
+          const message = summary.messages.find((candidate) =>
+            candidate.To.some((recipient) => recipient.Address === email)
+          );
+          if (!message) return "";
+
+          const detailResponse = await fetch(
+            `${mailpitUrl}/api/v1/message/${message.ID}`
+          );
+          const detail = (await detailResponse.json()) as { HTML?: string };
+          const match = detail.HTML?.match(/href="([^"]*token_hash[^"]*)"/);
+          recoveryUrl = match?.[1]?.replaceAll("&amp;", "&") ?? "";
+          return recoveryUrl;
+        },
+        { timeout: 10_000 }
+      )
+      .not.toBe("");
+
+    await page.goto(recoveryUrl);
+    await expect(page.getByRole("heading", { name: "ตั้งรหัสผ่านใหม่" })).toBeVisible();
+    await page.getByLabel("รหัสผ่านใหม่", { exact: true }).fill(newPassword);
+    await page.getByLabel("ยืนยันรหัสผ่านใหม่").fill(newPassword);
+    await page.getByRole("button", { name: "ตั้งรหัสผ่านใหม่" }).click();
+    await expect(
+      page.getByRole("heading", { name: "ตั้งรหัสผ่านเรียบร้อยแล้ว" })
+    ).toBeVisible();
+
+    const authClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { persistSession: false, autoRefreshToken: false } }
+    );
+    const signedIn = await authClient.auth.signInWithPassword({
+      email,
+      password: newPassword,
+    });
+    expect(signedIn.error).toBeNull();
+  } finally {
+    if (userId) await serviceClient.auth.admin.deleteUser(userId);
+  }
+});
+
 test("booking APIs reject malformed input", async ({ request }) => {
   const lookup = await request.post("/api/bookings/lookup", {
     data: { bookingNo: "invalid", phone: "invalid" },

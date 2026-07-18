@@ -12,6 +12,7 @@ import {
   PRIVACY_NOTICE_VERSION,
 } from "@/lib/privacy";
 import { getPublicSiteUrl } from "@/lib/site-url";
+import { validateAdminPassword } from "@/lib/auth/password-policy";
 
 describe("admin MFA enforcement", () => {
   it("requires AAL2 for an active administrator", () => {
@@ -77,6 +78,17 @@ describe("stale Auth session recovery", () => {
       )
     ).toBe(true);
     expect(isSupabaseAuthCookieName("unrelated-cookie", url)).toBe(false);
+  });
+});
+
+describe("admin password policy", () => {
+  it("requires length, mixed case, a digit, and a symbol", () => {
+    expect(validateAdminPassword("Short1!")).toBe("length");
+    expect(validateAdminPassword("ALLUPPERCASE1!")).toBe("lowercase");
+    expect(validateAdminPassword("alllowercase1!")).toBe("uppercase");
+    expect(validateAdminPassword("NoDigitsHere!!")).toBe("digit");
+    expect(validateAdminPassword("NoSymbolsHere1")).toBe("symbol");
+    expect(validateAdminPassword("StrongPassword1!")).toBeNull();
   });
 });
 

@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { KeyRound } from "lucide-react";
 import { changeAdminPassword } from "@/app/admin/actions";
+import {
+  getPasswordPolicyMessage,
+  validateAdminPassword,
+} from "@/lib/auth/password-policy";
 
 export default function ChangePasswordForm() {
   const [password, setPassword] = useState("");
@@ -17,8 +21,9 @@ export default function ChangePasswordForm() {
     setMessage("");
     setError("");
 
-    if (password.length < 12) {
-      setError("รหัสผ่านต้องมีอย่างน้อย 12 ตัวอักษร");
+    const policyError = validateAdminPassword(password);
+    if (policyError) {
+      setError(getPasswordPolicyMessage(policyError));
       setLoading(false);
       return;
     }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createFreshClient } from "@/lib/supabase/client";
 import { isStaleSessionError } from "@/lib/auth/session-recovery";
 
@@ -107,7 +108,7 @@ export default function LoginPage() {
           />
         </div>
 
-        <div className="mb-6">
+        <div className="mb-2">
           <label className="mb-1 block text-sm font-medium">
             Password
           </label>
@@ -120,6 +121,13 @@ export default function LoginPage() {
             required
           />
         </div>
+
+        <Link
+          href="/login/forgot-password"
+          className="mb-6 block text-right text-sm font-medium text-gray-600 underline-offset-4 hover:underline"
+        >
+          ลืมรหัสผ่าน?
+        </Link>
 
         <button
           disabled={loading}
