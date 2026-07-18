@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { determineAdminAccess } from "@/lib/auth/admin-access";
+import {
+  getSupabaseAuthCookiePrefix,
+  isStaleSessionError,
+  isSupabaseAuthCookieName,
+} from "@/lib/auth/session-recovery";
 import { bookingInputSchema } from "@/lib/booking-schema";
 import { addDaysToDateKey, getBangkokDateKey } from "@/lib/booking-rules";
 import {
@@ -48,6 +53,30 @@ describe("admin MFA enforcement", () => {
         currentLevel: "aal2",
       })
     ).toBe("forbidden");
+  });
+});
+
+describe("stale Auth session recovery", () => {
+  it("recognizes refresh-token failures that require local cleanup", () => {
+    expect(isStaleSessionError({ code: "refresh_token_not_found" })).toBe(true);
+    expect(isStaleSessionError({ code: "refresh_token_already_used" })).toBe(
+      true
+    );
+    expect(isStaleSessionError({ code: "invalid_credentials" })).toBe(false);
+  });
+
+  it("targets only the current Supabase project's Auth cookies", () => {
+    const url = "https://splzsolnwwnwkwhhdbnk.supabase.co";
+    expect(getSupabaseAuthCookiePrefix(url)).toBe(
+      "sb-splzsolnwwnwkwhhdbnk-auth-token"
+    );
+    expect(
+      isSupabaseAuthCookieName(
+        "sb-splzsolnwwnwkwhhdbnk-auth-token.0",
+        url
+      )
+    ).toBe(true);
+    expect(isSupabaseAuthCookieName("unrelated-cookie", url)).toBe(false);
   });
 });
 
