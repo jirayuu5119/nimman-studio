@@ -1,11 +1,44 @@
 import { test, expect, request as requestFactory } from "@playwright/test";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createHmac } from "node:crypto";
 import { addDaysToDateKey, getBangkokDateKey } from "@/lib/booking-rules";
 import { PRIVACY_NOTICE_VERSION } from "@/lib/privacy";
 
 test.skip(!process.env.RUN_E2E, "Set RUN_E2E=1 to run browser smoke tests");
 
 let serviceClient: SupabaseClient | null = null;
+
+function decodeBase32(value: string) {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let bits = "";
+  for (const character of value.toUpperCase().replace(/=+$/g, "")) {
+    const index = alphabet.indexOf(character);
+    if (index < 0) throw new Error("Invalid Base32 secret");
+    bits += index.toString(2).padStart(5, "0");
+  }
+
+  const bytes: number[] = [];
+  for (let offset = 0; offset + 8 <= bits.length; offset += 8) {
+    bytes.push(Number.parseInt(bits.slice(offset, offset + 8), 2));
+  }
+  return Buffer.from(bytes);
+}
+
+function generateTotp(secret: string, time = Date.now()) {
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor(time / 30_000)));
+  const digest = createHmac("sha1", decodeBase32(secret))
+    .update(counter)
+    .digest();
+  const offset = digest[digest.length - 1] & 0x0f;
+  const value =
+    (((digest[offset] & 0x7f) << 24) |
+      ((digest[offset + 1] & 0xff) << 16) |
+      ((digest[offset + 2] & 0xff) << 8) |
+      (digest[offset + 3] & 0xff)) %
+    1_000_000;
+  return value.toString().padStart(6, "0");
+}
 
 test.beforeAll(async () => {
   if (process.env.E2E_BASE_URL) return;
@@ -75,6 +108,33 @@ test("administrator can reset a forgotten password through the recovery email", 
   expect(userId).toEqual(expect.any(String));
 
   try {
+    const mfaClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { persistSession: false, autoRefreshToken: false } }
+    );
+    const signedInForEnrollment = await mfaClient.auth.signInWithPassword({
+      email,
+      password: oldPassword,
+    });
+    expect(signedInForEnrollment.error).toBeNull();
+    const enrollment = await mfaClient.auth.mfa.enroll({
+      factorType: "totp",
+      friendlyName: "Recovery E2E",
+      issuer: "Nimman Foto E2E",
+    });
+    expect(enrollment.error).toBeNull();
+    const factorId = enrollment.data?.id;
+    const totpSecret = enrollment.data?.totp.secret;
+    expect(factorId).toEqual(expect.any(String));
+    expect(totpSecret).toEqual(expect.any(String));
+    const verifiedEnrollment = await mfaClient.auth.mfa.challengeAndVerify({
+      factorId: factorId!,
+      code: generateTotp(totpSecret!, Date.now() - 30_000),
+    });
+    expect(verifiedEnrollment.error).toBeNull();
+    await mfaClient.auth.signOut();
+
     await page.goto("/login/forgot-password");
     await page.getByLabel("Email").fill(email);
     await page.getByRole("button", { name: "ส่งลิงก์ตั้งรหัสผ่านใหม่" }).click();
@@ -112,6 +172,13 @@ test("administrator can reset a forgotten password through the recovery email", 
       .not.toBe("");
 
     await page.goto(recoveryUrl);
+    await expect(
+      page.getByRole("heading", { name: "ยืนยันตัวตนสองขั้นตอน" })
+    ).toBeVisible();
+    await page
+      .getByLabel("รหัส 6 หลักจาก Authenticator")
+      .fill(generateTotp(totpSecret!));
+    await page.getByRole("button", { name: "ยืนยันตัวตน" }).click();
     await expect(page.getByRole("heading", { name: "ตั้งรหัสผ่านใหม่" })).toBeVisible();
     await page.getByLabel("รหัสผ่านใหม่", { exact: true }).fill(newPassword);
     await page.getByLabel("ยืนยันรหัสผ่านใหม่").fill(newPassword);
