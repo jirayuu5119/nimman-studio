@@ -101,7 +101,9 @@ test("administrator can reset a forgotten password through the recovery email", 
             `${mailpitUrl}/api/v1/message/${message.ID}`
           );
           const detail = (await detailResponse.json()) as { HTML?: string };
-          const match = detail.HTML?.match(/href="([^"]*token_hash[^"]*)"/);
+          const match = detail.HTML?.match(
+            /href="([^"]*\/auth\/v1\/verify[^"]*)"/
+          );
           recoveryUrl = match?.[1]?.replaceAll("&amp;", "&") ?? "";
           return recoveryUrl;
         },
