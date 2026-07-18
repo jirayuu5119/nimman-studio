@@ -1,19 +1,43 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { BookingProvider } from "@/context/BookingContext";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { getPublicSiteUrl } from "@/lib/site-url";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const lineSeedSansTh = localFont({
+  src: [
+    {
+      path: "./fonts/LINESeedSansTH-Thin.woff2",
+      weight: "100",
+      style: "normal",
+    },
+    {
+      path: "./fonts/LINESeedSansTH-Regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "./fonts/LINESeedSansTH-Bold.woff2",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "./fonts/LINESeedSansTH-ExtraBold.woff2",
+      weight: "800",
+      style: "normal",
+    },
+    {
+      path: "./fonts/LINESeedSansTH-Heavy.woff2",
+      weight: "900",
+      style: "normal",
+    },
+  ],
+  variable: "--font-line-seed-sans-th",
+  display: "swap",
+  fallback: ["Tahoma", "Arial", "sans-serif"],
+  adjustFontFallback: "Arial",
 });
 
 const siteUrl = getPublicSiteUrl();
@@ -63,7 +87,7 @@ export default function RootLayout({
   return (
     <html
       lang="th"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${lineSeedSansTh.variable} ${lineSeedSansTh.className} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <BookingProvider>{children}</BookingProvider>
