@@ -7,6 +7,7 @@ import {
   isSupportedTimeSlot,
 } from "@/lib/booking-rules";
 import { bookingInputSchema } from "@/lib/booking-schema";
+import { PRIVACY_NOTICE_VERSION } from "@/lib/privacy";
 
 describe("booking pricing", () => {
   it("calculates package, extra graduates, deposit, and remaining amount", () => {
@@ -60,6 +61,7 @@ describe("booking date and time rules", () => {
       university: "University",
       faculty: "Faculty",
       note: "safe note",
+      privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
     });
     expect(result.success).toBe(true);
     if (result.success) expect(result.data.fullname).toBe("Test Customer");
@@ -79,6 +81,7 @@ describe("booking date and time rules", () => {
         university: "University",
         faculty: "Faculty",
         note: "",
+        privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
       }).success
     ).toBe(false);
   });

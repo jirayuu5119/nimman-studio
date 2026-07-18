@@ -4,8 +4,9 @@ import { SearchCheck } from "lucide-react";
 import Feature from "@/components/Feature";
 import BookingButton from "@/components/BookingButton";
 import BookingQrDialog from "@/components/BookingQrDialog";
+import { getPublicSiteUrl } from "@/lib/site-url";
 
-const bookingUrl = "https://grad.jirayufoto.net/";
+const bookingUrl = `${getPublicSiteUrl()}/`;
 
 export default function Home() {
   return (
@@ -63,6 +64,12 @@ export default function Home() {
             >
               ติดต่อส่วนตัวผ่าน LINE
             </a>
+          </div>
+
+          <div className="mt-8 text-center text-xs text-stone-400">
+            <Link href="/privacy" className="underline underline-offset-4 hover:text-stone-700">
+              ประกาศความเป็นส่วนตัว
+            </Link>
           </div>
         </div>
       </section>

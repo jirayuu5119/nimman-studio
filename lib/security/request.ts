@@ -2,6 +2,7 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 import { getClientIpFromHeaders } from "@/lib/security/client-ip";
+import { logServerEvent } from "@/lib/monitoring";
 
 export function getRequestId(request: Request) {
   const incoming = request.headers.get("x-request-id");
@@ -15,6 +16,5 @@ export function getClientIp(request: Request) {
 }
 
 export function logServerError(event: string, requestId: string, code: string) {
-  const safeCode = code.replace(/[^a-zA-Z0-9_.-]/g, "_").slice(0, 100);
-  console.error(JSON.stringify({ event, requestId, code: safeCode }));
+  logServerEvent({ level: "error", event, requestId, code });
 }

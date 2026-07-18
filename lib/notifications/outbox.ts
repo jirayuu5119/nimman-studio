@@ -2,6 +2,7 @@ import "server-only";
 
 import { sendBookingCreatedNotification } from "@/lib/notifications/discord";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { reportOperationalError } from "@/lib/monitoring";
 
 type OutboxClaim = {
   id: string;
@@ -21,7 +22,7 @@ export async function processOutboxItem(item: OutboxClaim) {
     .maybeSingle();
 
   if (error || !booking) {
-    await supabase
+    const { error: updateError } = await supabase
       .from("notification_outbox")
       .update({
         status: "failed",
@@ -29,20 +30,29 @@ export async function processOutboxItem(item: OutboxClaim) {
         next_attempt_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
       })
       .eq("id", item.id);
+    if (updateError) throw new Error("OUTBOX_UPDATE_FAILED");
+    if (item.attempts === 8) {
+      await reportOperationalError({
+        event: "notification_outbox_exhausted",
+        requestId: item.id,
+        code: "BOOKING_NOT_FOUND",
+      });
+    }
     return false;
   }
 
   const result = await sendBookingCreatedNotification(booking);
   if (result.ok) {
-    await supabase
+    const { error: updateError } = await supabase
       .from("notification_outbox")
       .update({ status: "sent", sent_at: new Date().toISOString(), last_error: null })
       .eq("id", item.id);
+    if (updateError) throw new Error("OUTBOX_UPDATE_FAILED");
     return true;
   }
 
   const backoffMinutes = Math.min(360, 2 ** Math.max(0, item.attempts));
-  await supabase
+  const { error: updateError } = await supabase
     .from("notification_outbox")
     .update({
       status: "failed",
@@ -52,6 +62,14 @@ export async function processOutboxItem(item: OutboxClaim) {
       ).toISOString(),
     })
     .eq("id", item.id);
+  if (updateError) throw new Error("OUTBOX_UPDATE_FAILED");
+  if (item.attempts === 8) {
+    await reportOperationalError({
+      event: "notification_outbox_exhausted",
+      requestId: item.id,
+      code: result.code,
+    });
+  }
   return false;
 }
 

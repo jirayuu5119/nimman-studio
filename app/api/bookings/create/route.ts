@@ -109,6 +109,7 @@ export async function POST(request: Request) {
       p_deposit_amount: prices.depositAmount,
       p_remaining_amount: prices.remainingAmount,
       p_slip_path: uploadedPath,
+      p_privacy_notice_version: input.privacyNoticeVersion,
     });
 
     if (error) {

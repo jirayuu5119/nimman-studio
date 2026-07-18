@@ -13,6 +13,7 @@ import {
 } from "@/lib/admin-booking-filters";
 import { getSiteSettings, type SiteSettings } from "@/lib/siteSettings";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { parseCustomerDataRetentionDays } from "@/lib/privacy";
 import { Booking } from "@/types/booking";
 import {
   CalendarDays,
@@ -26,6 +27,8 @@ import {
   Link2,
   QrCode,
   Upload,
+  AlertTriangle,
+  ShieldCheck,
 } from "lucide-react";
 
 const PAGE_SIZE = 10;
@@ -123,7 +126,12 @@ export default async function AdminPage({
   bookingViewsSinceDate.setHours(bookingViewsSinceDate.getHours() - 24);
   const bookingViewsSince = bookingViewsSinceDate.toISOString();
 
-  const [analyticsResult, siteSettings, bookingViewsResult] =
+  const [
+    analyticsResult,
+    siteSettings,
+    bookingViewsResult,
+    exhaustedNotificationsResult,
+  ] =
     await Promise.all([
       supabase.rpc("get_booking_dashboard_analytics"),
       getSiteSettings(supabase),
@@ -132,9 +140,18 @@ export default async function AdminPage({
         .select("visitor_hash", { count: "exact", head: true })
         .eq("page", "booking")
         .gte("last_seen_at", bookingViewsSince),
+      supabase
+        .from("notification_outbox")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "failed")
+        .gte("attempts", 8),
     ]);
 
   if (analyticsResult.error) throw analyticsResult.error;
+  if (bookingViewsResult.error) throw bookingViewsResult.error;
+  if (exhaustedNotificationsResult.error) {
+    throw exhaustedNotificationsResult.error;
+  }
 
   const analytics = normalizeDashboardAnalytics(analyticsResult.data);
   const siteSettingsData = siteSettings as SiteSettings;
@@ -146,6 +163,10 @@ export default async function AdminPage({
   const promptpayQrPreview =
     promptpayQrSigned?.signedUrl ?? "/promptpay-qr.png";
   const bookingViews24h = bookingViewsResult.count ?? 0;
+  const exhaustedNotifications = exhaustedNotificationsResult.count ?? 0;
+  const retentionDays = parseCustomerDataRetentionDays(
+    process.env.CUSTOMER_DATA_RETENTION_DAYS
+  );
 
   const chartData = analytics.chartData;
 
@@ -179,6 +200,37 @@ export default async function AdminPage({
             <LogoutButton />
           </div>
         </div>
+
+        <section
+          className={`mb-8 rounded-[1.5rem] border p-5 ${
+            exhaustedNotifications > 0
+              ? "border-amber-200 bg-amber-50"
+              : "border-emerald-200 bg-emerald-50"
+          }`}
+        >
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-start gap-3">
+              {exhaustedNotifications > 0 ? (
+                <AlertTriangle className="mt-0.5 text-amber-700" size={22} />
+              ) : (
+                <ShieldCheck className="mt-0.5 text-emerald-700" size={22} />
+              )}
+              <div>
+                <h2 className="font-semibold text-stone-900">
+                  {exhaustedNotifications > 0
+                    ? `มีการแจ้งเตือนส่งไม่สำเร็จ ${exhaustedNotifications} รายการ`
+                    : "ระบบแจ้งเตือนพร้อมทำงาน"}
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-stone-600">
+                  Cron ทำงานวันละครั้งและแจ้งเตือน operational webhook เมื่อเกิดข้อผิดพลาด
+                </p>
+              </div>
+            </div>
+            <div className="rounded-full border border-black/10 bg-white/70 px-4 py-2 text-xs font-medium text-stone-600">
+              Retention: {retentionDays ? `${retentionDays} วัน` : "ยังไม่เปิดใช้งาน"}
+            </div>
+          </div>
+        </section>
 
         <div className="mb-8 flex flex-wrap gap-3 rounded-[1.5rem] border border-stone-200/80 bg-white/80 p-2 shadow-[0_12px_40px_rgba(0,0,0,0.04)] backdrop-blur">
           <Link

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { isBookableDate, isSupportedTimeSlot } from "@/lib/booking-rules";
 import { normalizePhone } from "@/lib/phone";
+import { PRIVACY_NOTICE_VERSION } from "@/lib/privacy";
 
 const noUnsafeControls = /^[^\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]*$/;
 
@@ -40,6 +41,7 @@ export const bookingInputSchema = z
     university: optionalText(200),
     faculty: optionalText(200),
     note: optionalText(1000),
+    privacyNoticeVersion: z.literal(PRIVACY_NOTICE_VERSION),
   })
   .superRefine((value, context) => {
     if (
@@ -80,5 +82,6 @@ export function bookingInputFromFormData(formData: FormData) {
     university: read("university"),
     faculty: read("faculty"),
     note: read("note"),
+    privacyNoticeVersion: read("privacyNoticeVersion"),
   });
 }

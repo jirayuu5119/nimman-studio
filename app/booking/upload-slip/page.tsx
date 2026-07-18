@@ -17,6 +17,8 @@ import {
 import { useBooking } from "@/context/BookingContext";
 import { PACKAGES } from "@/lib/packages";
 import { prepareSlipUpload } from "@/lib/prepareSlipUpload";
+import Link from "next/link";
+import { PRIVACY_NOTICE_VERSION } from "@/lib/privacy";
 import {
   DEFAULT_PROMPTPAY_NUMBER,
   DEFAULT_PROMPTPAY_QR_URL,
@@ -52,6 +54,7 @@ export default function UploadSlipPage() {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [privacyAcknowledged, setPrivacyAcknowledged] = useState(false);
   const [paymentSettings, setPaymentSettings] = useState<PaymentSettings>({
     promptpayNumber: DEFAULT_PROMPTPAY_NUMBER,
     promptpayQrUrl: DEFAULT_PROMPTPAY_QR_URL,
@@ -139,6 +142,11 @@ export default function UploadSlipPage() {
       return;
     }
 
+    if (!privacyAcknowledged) {
+      alert("กรุณารับทราบประกาศความเป็นส่วนตัวก่อนยืนยันการจอง");
+      return;
+    }
+
     if (
       !booking.date ||
       !booking.period ||
@@ -170,6 +178,7 @@ export default function UploadSlipPage() {
       formData.append("university", booking.university);
       formData.append("faculty", booking.faculty);
       formData.append("note", booking.note);
+      formData.append("privacyNoticeVersion", PRIVACY_NOTICE_VERSION);
 
       const response = await fetch("/api/bookings/create", {
         method: "POST",
@@ -429,7 +438,27 @@ export default function UploadSlipPage() {
             </section>
           </div>
 
-          <div className="mt-8 grid gap-3 md:grid-cols-2">
+          <label className="mt-8 flex items-start gap-3 rounded-2xl border border-stone-200 bg-stone-50 p-4 text-sm leading-6 text-stone-600">
+            <input
+              type="checkbox"
+              checked={privacyAcknowledged}
+              onChange={(event) => setPrivacyAcknowledged(event.target.checked)}
+              className="mt-1 h-4 w-4 shrink-0 accent-stone-900"
+            />
+            <span>
+              ข้าพเจ้าได้รับทราบการเก็บ ใช้ และระยะเวลาจัดเก็บข้อมูลตาม{" "}
+              <Link
+                href="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-stone-900 underline underline-offset-4"
+              >
+                ประกาศความเป็นส่วนตัว
+              </Link>
+            </span>
+          </label>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
             <button
               disabled={loading}
               onClick={() => router.back()}
@@ -439,10 +468,10 @@ export default function UploadSlipPage() {
             </button>
 
             <button
-              disabled={loading || !file}
+              disabled={loading || !file || !privacyAcknowledged}
               onClick={handleSubmit}
               className={`flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-semibold tracking-[0.12em] transition ${
-                loading || !file
+                loading || !file || !privacyAcknowledged
                   ? "cursor-not-allowed bg-stone-200 text-stone-400"
                   : "border border-stone-900 bg-stone-900 text-white hover:bg-white hover:text-stone-900"
               }`}

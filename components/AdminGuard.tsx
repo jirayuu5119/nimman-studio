@@ -14,12 +14,17 @@ export default function AdminGuard({
 
   useEffect(() => {
     async function checkUser() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const { data: userData } = await supabase.auth.getUser();
 
-      if (!session) {
+      if (!userData.user) {
         router.replace("/login");
+        return;
+      }
+
+      const { data: assurance, error } =
+        await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (error || assurance.currentLevel !== "aal2") {
+        router.replace("/login/mfa");
         return;
       }
 
@@ -32,7 +37,7 @@ export default function AdminGuard({
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center">
-        <p>Loading...</p>
+        <p>กำลังตรวจสอบสิทธิ์...</p>
       </main>
     );
   }

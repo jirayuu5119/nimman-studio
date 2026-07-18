@@ -13,12 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RATE_LIMIT_HASH_SECRET: ci-rate-limit-secret-with-at-least-32-bytes
+      CRON_SECRET: ci-cron-secret-with-at-least-32-bytes
+      CUSTOMER_DATA_RETENTION_DAYS: "365"
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
       - run: npm ci
       - name: Start local Supabase and verify migrations
@@ -32,8 +34,9 @@ jobs:
           echo "RUN_SUPABASE_INTEGRATION=1" >> "$GITHUB_ENV"
       - run: npm run lint
       - run: npm run typecheck
-      - run: npm run test
+      - run: npm run test:coverage
       - run: npm run test:integration
+      - run: npx --yes supabase@2.109.1 db lint --local --level warning --fail-on error
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e

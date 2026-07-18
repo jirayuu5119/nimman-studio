@@ -2,6 +2,8 @@ import "server-only";
 
 import { processPendingNotifications } from "@/lib/notifications/outbox";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { addDaysToDateKey, getBangkokDateKey } from "@/lib/booking-rules";
+import { parseCustomerDataRetentionDays } from "@/lib/privacy";
 
 type StorageEntry = {
   name: string;
@@ -12,6 +14,10 @@ type StorageEntry = {
 type SlipReference = {
   slip_path: string | null;
   slip_url: string | null;
+};
+
+type RetentionCandidate = SlipReference & {
+  id: string;
 };
 
 function legacySlipPath(slipUrl: string | null) {
@@ -111,6 +117,105 @@ async function removeConfirmedOrphanSlips() {
   return toDelete.length;
 }
 
+async function anonymizeExpiredBookings() {
+  const retentionDays = parseCustomerDataRetentionDays(
+    process.env.CUSTOMER_DATA_RETENTION_DAYS
+  );
+  if (retentionDays === null) return 0;
+
+  const cutoffDate = addDaysToDateKey(getBangkokDateKey(), -retentionDays);
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("id,slip_path,slip_url")
+    .in("status", ["completed", "cancelled"])
+    .is("data_anonymized_at", null)
+    .lt("booking_date", cutoffDate)
+    .order("booking_date", { ascending: true })
+    .limit(50);
+  if (error) throw new Error("RETENTION_CANDIDATE_QUERY_FAILED");
+
+  const candidates = (data ?? []) as RetentionCandidate[];
+  if (candidates.length === 0) return 0;
+  const ids = candidates.map((candidate) => candidate.id);
+
+  const { data: redacted, error: redactError } = await supabase
+    .from("bookings")
+    .update({
+      fullname: "ข้อมูลถูกลบตามนโยบาย",
+      phone: "0000000000",
+      line: null,
+      facebook: null,
+      university: null,
+      faculty: null,
+      note: null,
+    })
+    .in("id", ids)
+    .in("status", ["completed", "cancelled"])
+    .lt("booking_date", cutoffDate)
+    .is("data_anonymized_at", null)
+    .select("id");
+  if (redactError) throw new Error("RETENTION_REDACTION_FAILED");
+
+  const redactedIds = (redacted ?? []).map((row) => row.id);
+  if (redactedIds.length === 0) return 0;
+  const redactedIdSet = new Set(redactedIds);
+  const redactedCandidates = candidates.filter((candidate) =>
+    redactedIdSet.has(candidate.id)
+  );
+
+  const slipPaths = Array.from(
+    new Set(
+      redactedCandidates.flatMap((candidate) =>
+        [candidate.slip_path, legacySlipPath(candidate.slip_url)].filter(
+          (path): path is string => Boolean(path)
+        )
+      )
+    )
+  );
+  if (slipPaths.length > 0) {
+    const { error: removeError } = await supabase.storage
+      .from("slips")
+      .remove(slipPaths);
+    if (removeError) throw new Error("RETENTION_SLIP_REMOVE_FAILED");
+  }
+
+  const anonymizedAt = new Date().toISOString();
+  const { data: anonymized, error: finalizeError } = await supabase
+    .from("bookings")
+    .update({
+      slip_path: null,
+      slip_url: null,
+      data_anonymized_at: anonymizedAt,
+    })
+    .in("id", redactedIds)
+    .is("data_anonymized_at", null)
+    .select("id");
+  if (finalizeError) throw new Error("RETENTION_FINALIZE_FAILED");
+
+  const anonymizedIds = (anonymized ?? []).map((row) => row.id);
+  if (anonymizedIds.length === 0) return 0;
+
+  const { error: sessionDeleteError } = await supabase
+    .from("booking_access_sessions")
+    .delete()
+    .in("booking_id", anonymizedIds);
+  if (sessionDeleteError) throw new Error("RETENTION_SESSION_DELETE_FAILED");
+
+  const { error: auditError } = await supabase.from("audit_logs").insert({
+    resource_type: "booking_retention",
+    action: "customer_data_anonymized",
+    metadata: {
+      count: anonymizedIds.length,
+      cutoff_date: cutoffDate,
+      retention_days: retentionDays,
+    },
+  });
+  if (auditError) throw new Error("RETENTION_AUDIT_FAILED");
+
+  return anonymizedIds.length;
+}
+
 export async function runMaintenance() {
   const supabase = createAdminClient();
   const notifications = await processPendingNotifications(20);
@@ -120,5 +225,6 @@ export async function runMaintenance() {
   if (error) throw new Error("SECURITY_RECORD_CLEANUP_FAILED");
 
   const orphanSlipsRemoved = await removeConfirmedOrphanSlips();
-  return { notifications, cleanup, orphanSlipsRemoved };
+  const bookingsAnonymized = await anonymizeExpiredBookings();
+  return { notifications, cleanup, orphanSlipsRemoved, bookingsAnonymized };
 }

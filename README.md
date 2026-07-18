@@ -5,7 +5,7 @@ private payment-slip storage, an admin dashboard, and Discord notifications.
 
 ## Requirements
 
-- Node.js 20.9 or newer
+- Node.js 24.x (matches production and GitHub Actions)
 - npm
 - Docker Desktop for the local Supabase stack
 - Supabase CLI 2.109.1 (CI uses it through `npx`)
@@ -45,11 +45,17 @@ Required in production:
 - `RATE_LIMIT_HASH_SECRET` — random value of at least 32 characters
 - `CRON_SECRET` — random value of at least 32 characters
 - `DISCORD_WEBHOOK_URL`
+- `NEXT_PUBLIC_SITE_URL` - canonical HTTPS origin for metadata, robots, sitemap,
+  and generated booking QR codes
+- `OPERATIONAL_ALERT_WEBHOOK_URL` - dedicated alert webhook; do not reuse the
+  customer-notification channel
 
 Optional migration/maintenance settings:
 
 - `LEGACY_BOOKING_TOKEN_ACCEPT_UNTIL`
 - `ORPHAN_SLIP_RETENTION_HOURS`
+- `CUSTOMER_DATA_RETENTION_DAYS` - anonymizes completed/cancelled bookings in
+  batches; allowed range is 365-3650 days and empty means disabled
 
 ## Database and storage
 
@@ -69,8 +75,15 @@ To provision an administrator:
    `admin` and `active = true`.
 3. Keep public Auth signup disabled and require MFA in production.
 
+The first successful admin password login continues to `/login/mfa`. Enroll a
+TOTP authenticator and complete AAL2 verification before `/admin` can be used.
+
 See [docs/security-hardening.md](docs/security-hardening.md) for the complete
 security and rollout model.
+
+Customers must acknowledge the versioned notice at `/privacy` before booking.
+Keep `PRIVACY_NOTICE_VERSION` and the database insert trigger version aligned
+whenever the notice changes.
 
 ## Verification
 
@@ -80,6 +93,7 @@ npm run typecheck
 npm test
 npm run test:coverage
 npm run build
+npx --yes supabase@2.109.1 db lint --local --level warning --fail-on error
 ```
 
 Database integration tests require a reachable local or staging Supabase:
@@ -106,16 +120,24 @@ running the command.
 3. Apply pending migrations with `npx --yes supabase@2.109.1 db push`.
 4. Apply Auth/config changes with `npx --yes supabase@2.109.1 config push`.
 5. Configure all required Vercel environment variables.
-6. Deploy the application and verify booking, lookup, admin, export, and cron.
-7. Run security advisors and review `npm audit` before promotion.
+6. Confirm the Vercel project uses Node.js 24.x, then deploy the application.
+7. Enroll TOTP for every active admin and verify booking, lookup, admin, export,
+   privacy, monitoring, and cron.
+8. Run security advisors and review `npm audit` before promotion.
 
-The daily Vercel cron calls `/api/cron/maintenance`. Orphan-slip deletion is
-disabled unless `ORPHAN_SLIP_RETENTION_HOURS` is explicitly configured.
+The daily Vercel cron calls `/api/cron/maintenance`. Orphan-slip deletion and
+customer-data retention are both opt-in and disabled until their environment
+variables are explicitly configured.
 
 ## Backup and restore
 
-- Back up the database and both private buckets before schema or storage work.
-- Test restore procedures in a separate Supabase project.
-- Restore schema/migrations first, then storage objects, then application
-  environment values.
+- Use the encrypted scripts and operating procedure in
+  [docs/backup-runbook.md](docs/backup-runbook.md).
+- Schedule daily backups, keep the age identity separate, and perform a restore
+  drill in an isolated Supabase project at least quarterly.
 - Never use production customer data in automated tests.
+
+## Automated dependency updates
+
+Dependabot checks npm and GitHub Actions weekly. Keep branch protection enabled
+so dependency updates cannot bypass CI or review.

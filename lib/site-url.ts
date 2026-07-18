@@ -24,3 +24,16 @@ export function parseAllowedSiteUrl(
   url.hash = "";
   return url.toString();
 }
+
+export function getPublicSiteUrl() {
+  const raw = process.env.NEXT_PUBLIC_SITE_URL ?? "https://grad.jirayufoto.net";
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "https:" || url.username || url.password) {
+      throw new Error("UNSAFE_SITE_URL");
+    }
+    return url.origin;
+  } catch {
+    return "https://grad.jirayufoto.net";
+  }
+}

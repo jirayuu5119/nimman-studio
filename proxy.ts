@@ -28,7 +28,7 @@ export async function proxy(request: NextRequest) {
   await supabase.auth.getUser();
 
   const sensitivePage =
-    request.nextUrl.pathname === "/login" ||
+    request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/admin") ||
     request.nextUrl.pathname.startsWith("/booking/status") ||
     request.nextUrl.pathname.startsWith("/booking/success");
