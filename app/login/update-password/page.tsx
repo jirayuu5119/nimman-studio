@@ -8,12 +8,14 @@ import {
 } from "@/lib/auth/password-policy";
 import { createClient } from "@/lib/supabase/client";
 
-type PageState = "checking" | "ready" | "invalid" | "success";
+type PageState = "checking" | "mfa" | "ready" | "invalid" | "success";
 
 export default function UpdatePasswordPage() {
   const [pageState, setPageState] = useState<PageState>("checking");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [mfaFactorId, setMfaFactorId] = useState("");
+  const [mfaCode, setMfaCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -58,7 +60,40 @@ export default function UpdatePasswordPage() {
 
       const { data, error: userError } = await supabase.auth.getUser();
       if (!active) return;
-      setPageState(userError || !data.user ? "invalid" : "ready");
+      if (userError || !data.user) {
+        setPageState("invalid");
+        return;
+      }
+
+      const { data: assurance, error: assuranceError } =
+        await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (!active) return;
+      if (assuranceError) {
+        setPageState("invalid");
+        return;
+      }
+
+      if (
+        assurance.nextLevel === "aal2" &&
+        assurance.currentLevel !== "aal2"
+      ) {
+        const { data: factors, error: factorsError } =
+          await supabase.auth.mfa.listFactors();
+        const verifiedTotp = factors?.totp.find(
+          (factor) => factor.status === "verified"
+        );
+        if (!active) return;
+        if (factorsError || !verifiedTotp) {
+          setPageState("invalid");
+          return;
+        }
+
+        setMfaFactorId(verifiedTotp.id);
+        setPageState("mfa");
+        return;
+      }
+
+      setPageState("ready");
     }
 
     void verifyRecoverySession();
@@ -66,6 +101,43 @@ export default function UpdatePasswordPage() {
       active = false;
     };
   }, []);
+
+  async function handleMfaVerify(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+
+    if (!/^\d{6}$/.test(mfaCode) || !mfaFactorId) {
+      setError("กรุณากรอกรหัส 6 หลักล่าสุดจากแอป Authenticator");
+      return;
+    }
+
+    setLoading(true);
+    const supabase = createClient();
+    const { error: verifyError } =
+      await supabase.auth.mfa.challengeAndVerify({
+        factorId: mfaFactorId,
+        code: mfaCode,
+      });
+
+    if (verifyError) {
+      setError("รหัสไม่ถูกต้องหรือหมดอายุ กรุณาใช้รหัสล่าสุดจากแอป Authenticator");
+      setLoading(false);
+      return;
+    }
+
+    await supabase.auth.refreshSession();
+    const { data: assurance, error: assuranceError } =
+      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assuranceError || assurance.currentLevel !== "aal2") {
+      setError("ยืนยันตัวตนสองขั้นตอนไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+      setLoading(false);
+      return;
+    }
+
+    setMfaCode("");
+    setPageState("ready");
+    setLoading(false);
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -129,6 +201,49 @@ export default function UpdatePasswordPage() {
             >
               ขอลิงก์ใหม่
             </Link>
+          </div>
+        )}
+
+        {pageState === "mfa" && (
+          <div>
+            <h1 className="text-2xl font-bold">ยืนยันตัวตนสองขั้นตอน</h1>
+            <p className="mt-3 text-sm leading-6 text-gray-500">
+              ก่อนตั้งรหัสผ่านใหม่ กรุณากรอกรหัส 6 หลักล่าสุดจากแอป Authenticator
+            </p>
+
+            <form onSubmit={handleMfaVerify} className="mt-6">
+              {error && (
+                <div role="alert" className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-600">
+                  {error}
+                </div>
+              )}
+
+              <label htmlFor="recovery-mfa-code" className="mb-1 block text-sm font-medium">
+                รหัส 6 หลักจาก Authenticator
+              </label>
+              <input
+                id="recovery-mfa-code"
+                value={mfaCode}
+                onChange={(event) =>
+                  setMfaCode(event.target.value.replace(/\D/g, "").slice(0, 6))
+                }
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
+                maxLength={6}
+                autoFocus
+                className="w-full rounded-xl border px-4 py-3 text-center font-mono text-2xl tracking-[0.4em] outline-none focus:border-black"
+                required
+              />
+
+              <button
+                type="submit"
+                disabled={loading || mfaCode.length !== 6}
+                className="mt-6 w-full rounded-xl bg-black py-3 font-semibold text-white disabled:opacity-60"
+              >
+                {loading ? "กำลังยืนยัน..." : "ยืนยันตัวตน"}
+              </button>
+            </form>
           </div>
         )}
 
