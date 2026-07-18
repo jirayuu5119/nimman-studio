@@ -187,6 +187,15 @@ test("maintenance anonymizes expired customer data and removes the slip", async 
   const suffix = Date.now().toString();
   const bookingNo = `RETENTION-${suffix}`;
   const slipPath = `retention/${suffix}.png`;
+  const retentionDate = addDaysToDateKey(getBangkokDateKey(), -400);
+  const cleanup = await serviceClient
+    .from("bookings")
+    .delete()
+    .eq("booking_date", retentionDate)
+    .eq("period", "afternoon")
+    .like("booking_no", "RETENTION-%");
+  expect(cleanup.error).toBeNull();
+
   const upload = await serviceClient.storage
     .from("slips")
     .upload(slipPath, Buffer.from([137, 80, 78, 71]), {
@@ -201,7 +210,7 @@ test("maintenance anonymizes expired customer data and removes the slip", async 
       booking_no: bookingNo,
       fullname: "Retention Probe",
       phone: "0888888888",
-      booking_date: addDaysToDateKey(getBangkokDateKey(), -400),
+      booking_date: retentionDate,
       period: "afternoon",
       hours: 3,
       graduates: 1,
