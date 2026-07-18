@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createFreshClient } from "@/lib/supabase/client";
+import { isStaleSessionError } from "@/lib/auth/session-recovery";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,13 +19,49 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
+    const normalizedEmail = email.trim().toLowerCase();
+
+    async function clearLocalSession() {
+      await fetch("/api/auth/session", {
+        method: "DELETE",
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+    }
+
+    try {
+      await clearLocalSession();
+    } catch {
+      // A fresh non-singleton client below can still complete a password login.
+    }
+
+    let result = await createFreshClient().auth.signInWithPassword({
+      email: normalizedEmail,
       password,
     });
 
+    if (isStaleSessionError(result.error)) {
+      try {
+        await clearLocalSession();
+      } catch {
+        // The retry will return the actionable Auth error if cleanup failed.
+      }
+      result = await createFreshClient().auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      });
+    }
+
+    const { error } = result;
+
     if (error) {
-      setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+      if (error.code === "over_request_rate_limit") {
+        setError("ลองเข้าสู่ระบบหลายครั้งเกินไป กรุณารอสักครู่แล้วลองใหม่");
+      } else if (isStaleSessionError(error)) {
+        setError("เซสชันบนอุปกรณ์หมดอายุ กรุณารีเฟรชหน้าแล้วลองอีกครั้ง");
+      } else {
+        setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+      }
       setLoading(false);
       return;
     }
@@ -59,6 +96,10 @@ export default function LoginPage() {
           </label>
           <input
             type="email"
+            autoComplete="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             className="w-full rounded-xl border px-4 py-3 outline-none focus:border-black"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -72,6 +113,7 @@ export default function LoginPage() {
           </label>
           <input
             type="password"
+            autoComplete="current-password"
             className="w-full rounded-xl border px-4 py-3 outline-none focus:border-black"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

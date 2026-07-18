@@ -60,6 +60,21 @@ test("booking APIs reject malformed input", async ({ request }) => {
   expect(removedNotify.status()).toBe(410);
 });
 
+test("stale local Auth cookies can be cleared without touching other cookies", async ({
+  request,
+}) => {
+  const response = await request.delete("/api/auth/session", {
+    headers: {
+      cookie: "sb-127-auth-token.0=stale-session; unrelated-cookie=keep",
+    },
+  });
+
+  expect(response.status()).toBe(200);
+  const setCookie = response.headers()["set-cookie"] ?? "";
+  expect(setCookie).toContain("sb-127-auth-token.0=");
+  expect(setCookie).not.toContain("unrelated-cookie=");
+});
+
 test("SEO metadata routes are reachable", async ({ request }) => {
   const robots = await request.get("/robots.txt");
   expect(robots.status()).toBe(200);
