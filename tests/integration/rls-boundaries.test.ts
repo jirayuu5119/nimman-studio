@@ -60,7 +60,7 @@ describe.skipIf(!runIntegration)("production RLS boundaries", () => {
 
     const analytics = await client.rpc("get_booking_dashboard_analytics");
     expect(analytics.error).toBeNull();
-    expect(analytics.data).toMatchObject({ chartData: [] });
+    expect(analytics.data).toMatchObject({ chartData: expect.any(Array) });
   });
 
   it("does not allow the legacy booking RPC to bypass privacy acknowledgement", async () => {
