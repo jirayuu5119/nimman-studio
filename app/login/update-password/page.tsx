@@ -25,19 +25,24 @@ export default function UpdatePasswordPage() {
       const url = new URL(window.location.href);
       const code = url.searchParams.get("code");
       const hashParams = new URLSearchParams(url.hash.slice(1));
-      const tokenHash = hashParams.get("token_hash");
-      const recoveryType = hashParams.get("type");
+      const accessToken = hashParams.get("access_token");
+      const refreshToken = hashParams.get("refresh_token");
+      const authError = hashParams.get("error_code");
 
-      if (tokenHash && recoveryType === "recovery") {
+      if (accessToken && refreshToken) {
         window.history.replaceState({}, "", `${url.pathname}${url.search}`);
-        const { error: recoveryError } = await supabase.auth.verifyOtp({
-          token_hash: tokenHash,
-          type: "recovery",
+        const { error: recoveryError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
         });
         if (recoveryError) {
           if (active) setPageState("invalid");
           return;
         }
+      } else if (authError) {
+        window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+        if (active) setPageState("invalid");
+        return;
       }
 
       if (code) {

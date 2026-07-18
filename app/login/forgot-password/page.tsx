@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { createFreshClient } from "@/lib/supabase/client";
+import { createPasswordRecoveryClient } from "@/lib/supabase/client";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -16,8 +16,8 @@ export default function ForgotPasswordPage() {
     setError("");
 
     const normalizedEmail = email.trim().toLowerCase();
-    const redirectTo = window.location.origin;
-    const { error: resetError } = await createFreshClient().auth
+    const redirectTo = `${window.location.origin}/login/update-password`;
+    const { error: resetError } = await createPasswordRecoveryClient().auth
       .resetPasswordForEmail(normalizedEmail, { redirectTo });
 
     if (resetError) {

@@ -162,9 +162,14 @@ site_url = "https://grad.jirayufoto.net"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 additional_redirect_urls = [
   "https://nimman-studio-swart.vercel.app",
+  "https://grad.jirayufoto.net/login/update-password",
+  "https://nimman-studio-swart.vercel.app/login/update-password",
   "http://127.0.0.1:3000",
+  "http://127.0.0.1:3000/login/update-password",
   "http://127.0.0.1:3100",
+  "http://127.0.0.1:3100/login/update-password",
   "http://localhost:3000",
+  "http://localhost:3000/login/update-password",
 ]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
@@ -253,10 +258,6 @@ otp_expiry = 3600
 # [auth.email.template.invite]
 # subject = "You have been invited"
 # content_path = "./supabase/templates/invite.html"
-
-[auth.email.template.recovery]
-subject = "ตั้งรหัสผ่านใหม่สำหรับ Nimman Foto"
-content_path = "./supabase/templates/recovery.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
