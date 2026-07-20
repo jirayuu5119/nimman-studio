@@ -1,7 +1,7 @@
 # Telegram-only notification design
 
 Date: 2026-07-20
-Status: Approved design, pending written-spec review
+Status: Approved
 
 ## Context and root cause
 
@@ -50,6 +50,7 @@ The transport must never expose these values to browser code or logs. It returns
 - success: `{ ok: true }`
 - missing configuration: `TELEGRAM_NOT_CONFIGURED`
 - non-2xx Telegram response: `TELEGRAM_HTTP_<status>`
+- HTTP success without Telegram's `{ ok: true }` confirmation: `TELEGRAM_INVALID_RESPONSE`
 - abort/timeout: `TELEGRAM_TIMEOUT`
 - other fetch failure: `TELEGRAM_NETWORK_ERROR`
 
@@ -125,7 +126,7 @@ Implementation follows test-driven development:
 
 1. Obtain the bot token from BotFather without placing it in source control or chat history.
 2. Confirm the bot identity with Telegram `getMe`.
-3. Derive the intended private chat ID from the user's existing `hello` update and confirm the chat title/type without retaining the update payload.
+3. Derive the intended private chat ID from `getUpdates` and confirm the chat title/type without retaining the update payload. Telegram retains incoming updates for at most 24 hours, so if the existing `hello` update is no longer available, ask the user to send a fresh `/start` message and repeat this step.
 4. Store `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` as Production secrets in Vercel.
 5. Send one explicit test message to the selected chat.
 6. Deploy through the existing pull-request, GitHub Actions, and Vercel Git workflow.
