@@ -173,15 +173,15 @@ Stage only the listed files and commit with `feat: document and enforce retentio
 - Produces: revoked direct execution on `public.set_updated_at()` for `PUBLIC`, `anon`, and `authenticated`.
 - Produces: removal of `pg_net` only when remote dependency inspection returns no external dependents.
 
-- [ ] **Step 1: Verify CLI and current guidance**
+- [x] **Step 1: Verify CLI and current guidance**
 
 Run `npx.cmd supabase --version`, `npx.cmd supabase migration new --help`, and `npx.cmd supabase db --help`. Fetch the current Supabase changelog and official Auth password-security documentation before changing hosted settings.
 
-- [ ] **Step 2: Inspect remote dependencies and grants read-only**
+- [x] **Step 2: Inspect remote dependencies and grants read-only**
 
 Query `pg_extension`, `pg_depend`, `pg_proc`, and `information_schema.routine_privileges` for `pg_net` and `public.set_updated_at()` through the linked project. Record object names and grantees only.
 
-- [ ] **Step 3: Create the migration**
+- [x] **Step 3: Create the migration**
 
 Run `npx.cmd supabase migration new harden_trigger_function_privileges` and write:
 
@@ -192,11 +192,11 @@ revoke execute on function public.set_updated_at()
 
 Append `drop extension if exists pg_net;` only when Step 2 proves zero external dependents.
 
-- [ ] **Step 4: Replay locally**
+- [x] **Step 4: Replay locally**
 
 Run `npx.cmd supabase db reset`, `npx.cmd supabase migration list --local`, `npx.cmd supabase db lint --local --level warning`, and `npm.cmd run test:integration`. Expected: reset/replay succeeds, lint reports no errors, and integration tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 Stage the generated migration and commit with `fix: restrict trigger function execution`.
 
