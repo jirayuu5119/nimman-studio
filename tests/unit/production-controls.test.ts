@@ -18,6 +18,7 @@ import {
   ORPHAN_SLIP_RETENTION_HOURS,
   parseOrphanSlipRetentionHours,
 } from "@/lib/retention";
+import { getLegacySlipPath } from "@/lib/slip-path";
 
 describe("admin MFA enforcement", () => {
   it("requires AAL2 for an active administrator", () => {
@@ -98,6 +99,25 @@ describe("admin password policy", () => {
 });
 
 describe("privacy and retention controls", () => {
+  it("normalizes only safe legacy public slip paths", () => {
+    expect(
+      getLegacySlipPath(
+        "https://x.supabase.co/storage/v1/object/public/slips/a%2Fb.jpg"
+      )
+    ).toBe("a/b.jpg");
+    expect(
+      getLegacySlipPath(
+        "https://x.supabase.co/storage/v1/object/sign/slips/a.jpg"
+      )
+    ).toBeNull();
+    expect(
+      getLegacySlipPath(
+        "https://x.supabase.co/storage/v1/object/public/slips/%2e%2e/a.jpg"
+      )
+    ).toBeNull();
+    expect(getLegacySlipPath("not-a-url")).toBeNull();
+  });
+
   it("uses fail-closed production retention values", () => {
     expect(CUSTOMER_DATA_RETENTION_DAYS).toBe(365);
     expect(ORPHAN_SLIP_RETENTION_HOURS).toBe(720);
@@ -117,6 +137,8 @@ describe("privacy and retention controls", () => {
   });
 
   it("requires the current privacy notice version on booking input", () => {
+    expect(PRIVACY_NOTICE_VERSION).toBe("2026-07-20");
+
     const input = {
       bookingDate: addDaysToDateKey(getBangkokDateKey(), 1),
       period: "morning",

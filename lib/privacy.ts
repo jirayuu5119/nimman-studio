@@ -1,4 +1,4 @@
-export const PRIVACY_NOTICE_VERSION = "2026-07-18";
+export const PRIVACY_NOTICE_VERSION = "2026-07-20";
 export const MIN_RETENTION_DAYS = 365;
 export const MAX_RETENTION_DAYS = 3650;
 

@@ -134,7 +134,7 @@ Stage the four files explicitly and commit with `feat: validate retention config
 - Produces: `getLegacySlipPath(slipUrl: string | null): string | null`.
 - Produces: privacy notice version `2026-07-20` and visible 365-day retention disclosure.
 
-- [ ] **Step 1: Write failing path and notice-version tests**
+- [x] **Step 1: Write failing path and notice-version tests**
 
 ```ts
 expect(getLegacySlipPath("https://x.supabase.co/storage/v1/object/public/slips/a%2Fb.jpg")).toBe("a/b.jpg");
@@ -144,23 +144,23 @@ expect(getLegacySlipPath("not-a-url")).toBeNull();
 expect(PRIVACY_NOTICE_VERSION).toBe("2026-07-20");
 ```
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run the Task 2 test command. Expected: FAIL because the helper is missing and the notice version is `2026-07-18`.
 
-- [ ] **Step 3: Implement the helper and notice**
+- [x] **Step 3: Implement the helper and notice**
 
 Move the existing legacy URL parser into `lib/slip-path.ts` as `getLegacySlipPath`, import it from `lib/maintenance.ts`, and retain fail-closed behavior for any non-empty legacy URL that cannot be normalized. Set `PRIVACY_NOTICE_VERSION` to `2026-07-20`. Update the Thai retention section to state that completed or cancelled booking personal data and payment slips are anonymized or removed after 365 days, while encrypted disaster-recovery copies may overlap briefly before scheduled expiry.
 
-- [ ] **Step 4: Remove proven-dead duplication**
+- [x] **Step 4: Remove proven-dead duplication**
 
 Run `rg -n 'lib/middleware|@/lib/middleware|lib/server|@/lib/server|createSupabaseServerClient' -g '!lib/middleware.ts' -g '!lib/server.ts' -g '!docs/**' -g '!node_modules/**' -g '!.next/**'`. Expected: no references. Delete `lib/middleware.ts` and `lib/server.ts`, then reduce `lib/bookingAccessToken.ts` to one `import "server-only";` declaration.
 
-- [ ] **Step 5: Verify GREEN and static safety**
+- [x] **Step 5: Verify GREEN and static safety**
 
 Run `npm.cmd test -- tests/unit/production-controls.test.ts` and `npm.cmd run typecheck`. Expected: both exit 0.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Stage only the listed files and commit with `feat: document and enforce retention safety`.
 

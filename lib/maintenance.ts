@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { addDaysToDateKey, getBangkokDateKey } from "@/lib/booking-rules";
 import { parseCustomerDataRetentionDays } from "@/lib/privacy";
 import { parseOrphanSlipRetentionHours } from "@/lib/retention";
+import { getLegacySlipPath } from "@/lib/slip-path";
 
 type StorageEntry = {
   name: string;
@@ -20,20 +21,6 @@ type SlipReference = {
 type RetentionCandidate = SlipReference & {
   id: string;
 };
-
-function legacySlipPath(slipUrl: string | null) {
-  if (!slipUrl) return null;
-
-  try {
-    const url = new URL(slipUrl);
-    const marker = "/storage/v1/object/public/slips/";
-    if (!url.pathname.startsWith(marker)) return null;
-    const path = decodeURIComponent(url.pathname.slice(marker.length));
-    return path && !path.includes("..") ? path : null;
-  } catch {
-    return null;
-  }
-}
 
 function configuredOrphanGraceMs() {
   const hours = parseOrphanSlipRetentionHours(
@@ -92,11 +79,14 @@ async function removeConfirmedOrphanSlips() {
     if (error) throw new Error("SLIP_REFERENCE_QUERY_FAILED");
 
     for (const row of (data ?? []) as SlipReference[]) {
-      if (row.slip_url?.trim() && !legacySlipPath(row.slip_url)) {
+      if (row.slip_url?.trim() && !getLegacySlipPath(row.slip_url)) {
         return 0;
       }
 
-      const paths = [row.slip_path?.trim() || null, legacySlipPath(row.slip_url)];
+      const paths = [
+        row.slip_path?.trim() || null,
+        getLegacySlipPath(row.slip_url),
+      ];
       for (const path of paths) {
         if (path) referenced.add(path);
       }
@@ -167,7 +157,7 @@ async function anonymizeExpiredBookings() {
   const slipPaths = Array.from(
     new Set(
       redactedCandidates.flatMap((candidate) =>
-        [candidate.slip_path, legacySlipPath(candidate.slip_url)].filter(
+        [candidate.slip_path, getLegacySlipPath(candidate.slip_url)].filter(
           (path): path is string => Boolean(path)
         )
       )
