@@ -35,6 +35,21 @@ with age, and removes plaintext staging files.
 Verification decrypts into a unique temporary directory, checks required
 artifacts and every file hash, then removes the temporary plaintext copy.
 
+## Verified Windows operator locations
+
+The production workstation keeps encrypted archives under
+`D:\NimmanFoto-Encrypted-Backups` and a recovery identity copy under
+`F:\NimmanFoto-Backup-Key`. D: and F: were verified as separate physical
+disks on 2026-07-20. The identity path used by restore verification is:
+
+```powershell
+$env:BACKUP_AGE_IDENTITY_FILE = "F:\NimmanFoto-Backup-Key\age-identity.txt"
+```
+
+On 2026-07-20, `nimman-studio-20260720-130033.zip.age` passed archive
+SHA-256 validation and all 49 internal manifest checks. Its SHA-256 is
+`a819566692205f26000b122dee8bcf08a78133044d3e9514b1c35879a6a048fc`.
+
 ## Schedule and retention
 
 - Run the backup daily after the maintenance cron.

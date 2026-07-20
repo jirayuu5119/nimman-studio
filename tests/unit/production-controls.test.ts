@@ -13,6 +13,13 @@ import {
 } from "@/lib/privacy";
 import { getPublicSiteUrl } from "@/lib/site-url";
 import { validateAdminPassword } from "@/lib/auth/password-policy";
+import {
+  CUSTOMER_DATA_RETENTION_DAYS,
+  ORPHAN_SLIP_RETENTION_HOURS,
+  parseOrphanSlipRetentionHours,
+} from "@/lib/retention";
+import { getLegacySlipPath } from "@/lib/slip-path";
+import { selectBookingNotificationWebhook } from "@/lib/notifications/discord-config";
 
 describe("admin MFA enforcement", () => {
   it("requires AAL2 for an active administrator", () => {
@@ -93,6 +100,35 @@ describe("admin password policy", () => {
 });
 
 describe("privacy and retention controls", () => {
+  it("normalizes only safe legacy public slip paths", () => {
+    expect(
+      getLegacySlipPath(
+        "https://x.supabase.co/storage/v1/object/public/slips/a%2Fb.jpg"
+      )
+    ).toBe("a/b.jpg");
+    expect(
+      getLegacySlipPath(
+        "https://x.supabase.co/storage/v1/object/sign/slips/a.jpg"
+      )
+    ).toBeNull();
+    expect(
+      getLegacySlipPath(
+        "https://x.supabase.co/storage/v1/object/public/slips/%2e%2e/a.jpg"
+      )
+    ).toBeNull();
+    expect(getLegacySlipPath("not-a-url")).toBeNull();
+  });
+
+  it("uses fail-closed production retention values", () => {
+    expect(CUSTOMER_DATA_RETENTION_DAYS).toBe(365);
+    expect(ORPHAN_SLIP_RETENTION_HOURS).toBe(720);
+    expect(parseOrphanSlipRetentionHours("720")).toBe(720);
+    expect(parseOrphanSlipRetentionHours("23")).toBeNull();
+    expect(parseOrphanSlipRetentionHours("8761")).toBeNull();
+    expect(parseOrphanSlipRetentionHours("720.5")).toBeNull();
+    expect(parseOrphanSlipRetentionHours(720)).toBeNull();
+  });
+
   it("accepts only the configured retention safety range", () => {
     expect(parseCustomerDataRetentionDays("")).toBeNull();
     expect(parseCustomerDataRetentionDays("364")).toBeNull();
@@ -102,6 +138,8 @@ describe("privacy and retention controls", () => {
   });
 
   it("requires the current privacy notice version on booking input", () => {
+    expect(PRIVACY_NOTICE_VERSION).toBe("2026-07-20");
+
     const input = {
       bookingDate: addDaysToDateKey(getBangkokDateKey(), 1),
       period: "morning",
@@ -125,6 +163,23 @@ describe("privacy and retention controls", () => {
         privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
       }).success
     ).toBe(true);
+  });
+});
+
+describe("booking notification configuration", () => {
+  it("falls back to the operational webhook when the booking webhook is absent", () => {
+    expect(
+      selectBookingNotificationWebhook({
+        DISCORD_WEBHOOK_URL: "https://discord.example/booking",
+        OPERATIONAL_ALERT_WEBHOOK_URL: "https://discord.example/operations",
+      })
+    ).toBe("https://discord.example/booking");
+    expect(
+      selectBookingNotificationWebhook({
+        OPERATIONAL_ALERT_WEBHOOK_URL: "https://discord.example/operations",
+      })
+    ).toBe("https://discord.example/operations");
+    expect(selectBookingNotificationWebhook({})).toBeNull();
   });
 });
 
