@@ -306,4 +306,3 @@ Verify the production URL and deployment status, `/admin` authentication boundar
 - [ ] **Step 6: Roll back on any smoke failure**
 
 If any post-deploy smoke check fails, immediately promote/redeploy the deployment corresponding to `admin-dashboard-pre-redesign-20260720`, re-run the read-only smoke suite, and report both failure and rollback evidence.
-

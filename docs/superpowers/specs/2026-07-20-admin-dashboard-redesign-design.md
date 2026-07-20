@@ -70,4 +70,3 @@ The server page keeps the existing Supabase service-client queries and analytics
 - New admin UI Playwright checks verify authenticated rendering, section navigation, drawer behavior, filters, pagination, existing detail links, and responsive overflow at 1440, 768, 390, and 360px.
 - Production verification is read-only: route access, headers, health, public booking availability, and Vercel error logs.
 - Deployment continues through the existing protected GitHub/Vercel workflow; the pre-change deployment and Git tag remain rollback targets.
-
