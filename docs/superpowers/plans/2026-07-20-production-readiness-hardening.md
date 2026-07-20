@@ -304,7 +304,7 @@ Execution note: after the final database replay, the local Supabase Gateway reta
 
 Inspect status, full diff, diff stat, and a targeted secret-pattern scan. Expected: approved files only and no credential value.
 
-- [ ] **Step 3: Push and open PR**
+- [x] **Step 3: Push and open PR**
 
 Verify `gh --version` and `gh auth status`, push with upstream tracking, and open a ready pull request to `main` describing the security, retention, database, and operational changes.
 
