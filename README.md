@@ -1,7 +1,7 @@
 # Nimman Foto Booking
 
 Production booking system for Nimman Foto, built with Next.js 16, Supabase,
-private payment-slip storage, an admin dashboard, and Discord notifications.
+private payment-slip storage, an admin dashboard, and Telegram notifications.
 
 ## Requirements
 
@@ -44,11 +44,10 @@ Required in production:
 - `SUPABASE_SERVICE_ROLE_KEY` — server only; never expose it to the browser
 - `RATE_LIMIT_HASH_SECRET` — random value of at least 32 characters
 - `CRON_SECRET` — random value of at least 32 characters
-- `DISCORD_WEBHOOK_URL`
+- `TELEGRAM_BOT_TOKEN` — server only; token for the approved private Telegram bot
+- `TELEGRAM_CHAT_ID` — server only; numeric ID of the approved private Telegram chat
 - `NEXT_PUBLIC_SITE_URL` - canonical HTTPS origin for metadata, robots, sitemap,
   and generated booking QR codes
-- `OPERATIONAL_ALERT_WEBHOOK_URL` - dedicated alert webhook; do not reuse the
-  customer-notification channel
 
 Optional migration/maintenance settings:
 
@@ -123,7 +122,10 @@ running the command.
 6. Confirm the Vercel project uses Node.js 24.x, then deploy the application.
 7. Enroll TOTP for every active admin and verify booking, lookup, admin, export,
    privacy, monitoring, and cron.
-8. Run security advisors and review `npm audit` before promotion.
+8. Send an explicit Telegram test delivery to the approved private chat. Replay
+   with `npm run notify:replay -- NF-YYYYMMDD-NNNN` only when the booking is a
+   known failed outbox row; never use replay as a general notification test.
+9. Run security advisors and review `npm audit` before promotion.
 
 The daily Vercel cron calls `/api/cron/maintenance`. Orphan-slip deletion and
 customer-data retention are both opt-in and disabled until their environment

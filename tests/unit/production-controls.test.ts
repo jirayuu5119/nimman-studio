@@ -19,7 +19,7 @@ import {
   parseOrphanSlipRetentionHours,
 } from "@/lib/retention";
 import { getLegacySlipPath } from "@/lib/slip-path";
-import { selectBookingNotificationWebhook } from "@/lib/notifications/discord-config";
+import { getTelegramConfig } from "@/lib/notifications/telegram-config";
 
 describe("admin MFA enforcement", () => {
   it("requires AAL2 for an active administrator", () => {
@@ -166,20 +166,17 @@ describe("privacy and retention controls", () => {
   });
 });
 
-describe("booking notification configuration", () => {
-  it("falls back to the operational webhook when the booking webhook is absent", () => {
+describe("Telegram notification configuration", () => {
+  it("requires and trims both server-only values", () => {
     expect(
-      selectBookingNotificationWebhook({
-        DISCORD_WEBHOOK_URL: "https://discord.example/booking",
-        OPERATIONAL_ALERT_WEBHOOK_URL: "https://discord.example/operations",
+      getTelegramConfig({
+        TELEGRAM_BOT_TOKEN: " 123456:test-token ",
+        TELEGRAM_CHAT_ID: " -1001234567890 ",
       })
-    ).toBe("https://discord.example/booking");
-    expect(
-      selectBookingNotificationWebhook({
-        OPERATIONAL_ALERT_WEBHOOK_URL: "https://discord.example/operations",
-      })
-    ).toBe("https://discord.example/operations");
-    expect(selectBookingNotificationWebhook({})).toBeNull();
+    ).toEqual({ botToken: "123456:test-token", chatId: "-1001234567890" });
+    expect(getTelegramConfig({ TELEGRAM_BOT_TOKEN: "token" })).toBeNull();
+    expect(getTelegramConfig({ TELEGRAM_CHAT_ID: "123" })).toBeNull();
+    expect(getTelegramConfig({})).toBeNull();
   });
 });
 

@@ -70,5 +70,5 @@ At least quarterly, create a separate non-production Supabase project and:
 5. Record the date, operator, backup timestamp, result, and recovery duration.
 6. Destroy the drill project and all decrypted temporary files.
 
-Do not run restore drills against production and do not use a production
-Discord webhook in the drill environment.
+Do not run restore drills against production and never use the production
+Telegram bot token or chat ID in the drill environment.
