@@ -1,82 +1,33 @@
-import Link from "next/link";
-import Image from "next/image";
+import {
+  BadgeCheck,
+  CalendarDays,
+  CalendarRange,
+  CircleDollarSign,
+  CircleX,
+  Clock3,
+  Eye,
+} from "lucide-react";
 import ChangePasswordForm from "@/components/admin/ChangePasswordForm";
-import LogoutButton from "@/components/admin/LogoutButton";
-import { updatePaymentSettings, updatePortfolioLinks } from "./actions";
-import RecentBookings from "./RecentBookings";
-import StatCard from "./StatCard";
-import RevenueChart from "./RevenueChart";
-import AdminTable from "./AdminTable";
+import { AdminHeader } from "@/components/admin/AdminHeader";
+import { AdminQuickActions } from "@/components/admin/AdminQuickActions";
+import { AdminStatusBanner } from "@/components/admin/AdminStatusBanner";
+import { PortfolioSettingsForm } from "@/components/admin/PortfolioSettingsForm";
+import { PromptPaySettingsForm } from "@/components/admin/PromptPaySettingsForm";
 import {
   normalizeAdminBookingSearch,
   normalizeAdminBookingStatus,
 } from "@/lib/admin-booking-filters";
+import { normalizeDashboardAnalytics } from "@/lib/admin-dashboard";
+import { parseCustomerDataRetentionDays } from "@/lib/privacy";
 import { getSiteSettings, type SiteSettings } from "@/lib/siteSettings";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { parseCustomerDataRetentionDays } from "@/lib/privacy";
-import { Booking } from "@/types/booking";
-import {
-  CalendarDays,
-  CalendarRange,
-  CircleDollarSign,
-  Clock3,
-  BadgeCheck,
-  CircleX,
-  ExternalLink,
-  Eye,
-  Link2,
-  QrCode,
-  Upload,
-  AlertTriangle,
-  ShieldCheck,
-} from "lucide-react";
+import type { Booking } from "@/types/booking";
+import AdminTable from "./AdminTable";
+import RecentBookings from "./RecentBookings";
+import RevenueChart from "./RevenueChart";
+import StatCard from "./StatCard";
 
 const PAGE_SIZE = 10;
-type ChartItem = { date: string; revenue: number };
-
-type DashboardAnalytics = {
-  totalRevenue: number;
-  totalBookings: number;
-  pending: number;
-  paid: number;
-  confirmed: number;
-  completed: number;
-  cancelled: number;
-  today: number;
-  thisMonth: number;
-  chartData: ChartItem[];
-};
-
-function normalizeDashboardAnalytics(value: unknown): DashboardAnalytics {
-  const data = value && typeof value === "object" ? value as Record<string, unknown> : {};
-  const numberValue = (key: string) => {
-    const parsed = Number(data[key]);
-    return Number.isFinite(parsed) ? parsed : 0;
-  };
-  const chartData = Array.isArray(data.chartData)
-    ? data.chartData.flatMap((item) => {
-        if (!item || typeof item !== "object") return [];
-        const row = item as Record<string, unknown>;
-        const revenue = Number(row.revenue);
-        return typeof row.date === "string" && Number.isFinite(revenue)
-          ? [{ date: row.date, revenue }]
-          : [];
-      })
-    : [];
-
-  return {
-    totalRevenue: numberValue("totalRevenue"),
-    totalBookings: numberValue("totalBookings"),
-    pending: numberValue("pending"),
-    paid: numberValue("paid"),
-    confirmed: numberValue("confirmed"),
-    completed: numberValue("completed"),
-    cancelled: numberValue("cancelled"),
-    today: numberValue("today"),
-    thisMonth: numberValue("thisMonth"),
-    chartData,
-  };
-}
 
 export default async function AdminPage({
   searchParams,
@@ -88,22 +39,18 @@ export default async function AdminPage({
   }>;
 }) {
   const params = await searchParams;
-
   const requestedPage = Number(params.page ?? 1);
-  const page = Number.isSafeInteger(requestedPage) && requestedPage > 0
-    ? Math.min(requestedPage, 100_000)
-    : 1;
+  const page =
+    Number.isSafeInteger(requestedPage) && requestedPage > 0
+      ? Math.min(requestedPage, 100_000)
+      : 1;
   const q = normalizeAdminBookingSearch(params.q);
   const status = normalizeAdminBookingStatus(params.status);
-
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
   const supabase = createAdminClient();
-
-  let query = supabase.from("bookings").select("*", {
-    count: "exact",
-  });
+  let query = supabase.from("bookings").select("*", { count: "exact" });
 
   if (q) {
     query = query.or(
@@ -111,9 +58,7 @@ export default async function AdminPage({
     );
   }
 
-  if (status !== "all") {
-    query = query.eq("status", status);
-  }
+  if (status !== "all") query = query.eq("status", status);
 
   const { data: bookings, count, error: bookingsError } = await query
     .order("created_at", { ascending: false })
@@ -131,21 +76,20 @@ export default async function AdminPage({
     siteSettings,
     bookingViewsResult,
     exhaustedNotificationsResult,
-  ] =
-    await Promise.all([
-      supabase.rpc("get_booking_dashboard_analytics"),
-      getSiteSettings(supabase),
-      supabase
-        .from("page_visitors")
-        .select("visitor_hash", { count: "exact", head: true })
-        .eq("page", "booking")
-        .gte("last_seen_at", bookingViewsSince),
-      supabase
-        .from("notification_outbox")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "failed")
-        .gte("attempts", 8),
-    ]);
+  ] = await Promise.all([
+    supabase.rpc("get_booking_dashboard_analytics"),
+    getSiteSettings(supabase),
+    supabase
+      .from("page_visitors")
+      .select("visitor_hash", { count: "exact", head: true })
+      .eq("page", "booking")
+      .gte("last_seen_at", bookingViewsSince),
+    supabase
+      .from("notification_outbox")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "failed")
+      .gte("attempts", 8),
+  ]);
 
   if (analyticsResult.error) throw analyticsResult.error;
   if (bookingViewsResult.error) throw bookingViewsResult.error;
@@ -168,327 +112,84 @@ export default async function AdminPage({
     process.env.CUSTOMER_DATA_RETENTION_DAYS
   );
 
-  const chartData = analytics.chartData;
-
   return (
-    <main className="min-h-screen bg-[#f8f5f0] px-5 py-8 text-stone-900 md:px-8 md:py-10">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-[0.35em] text-stone-400">
-              ผู้ดูแลระบบ Nimman Foto
-            </p>
+    <main className="min-h-screen px-3 py-4 sm:px-5 sm:py-5 lg:px-7 xl:px-8">
+      <div className="mx-auto max-w-[1540px] space-y-4">
+        <AdminHeader />
+        <AdminStatusBanner
+          failedNotifications={exhaustedNotifications}
+          retentionDays={retentionDays}
+        />
 
-            <h1 className="mt-4 font-serif text-4xl font-semibold tracking-tight text-stone-900 md:text-5xl">
-              แดชบอร์ดผู้ดูแล
-            </h1>
+        <section
+          aria-label="สรุปข้อมูลการจอง"
+          className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7"
+        >
+          <StatCard title="งานวันนี้" value={analytics.today} detail="งาน" tone="neutral" icon={<CalendarDays aria-hidden="true" size={18} />} />
+          <StatCard title="งานเดือนนี้" value={analytics.thisMonth} detail="งาน" tone="success" icon={<CalendarRange aria-hidden="true" size={18} />} />
+          <StatCard title="รายได้รวม" value={`฿${analytics.totalRevenue.toLocaleString("th-TH")}`} detail="บาท" tone="success" icon={<CircleDollarSign aria-hidden="true" size={18} />} />
+          <StatCard title="รอตรวจสอบ" value={analytics.pending} detail="รายการ" tone="warning" icon={<Clock3 aria-hidden="true" size={18} />} />
+          <StatCard title="ยืนยันแล้ว" value={analytics.confirmed} detail="รายการ" tone="success" icon={<BadgeCheck aria-hidden="true" size={18} />} />
+          <StatCard title="ยกเลิก" value={analytics.cancelled} detail="รายการ" tone="danger" icon={<CircleX aria-hidden="true" size={18} />} />
+          <StatCard title="ผู้เข้าชม 24 ชม." value={bookingViews24h} detail="คน" tone="info" icon={<Eye aria-hidden="true" size={18} />} />
+        </section>
 
-            <p className="mt-3 text-sm leading-6 text-stone-500">
-              จัดการรายการจอง ตรวจสอบยอด และอัปเดตสถานะการจอง
-            </p>
+        <AdminQuickActions />
+
+        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.55fr)]">
+          <div className="space-y-4">
+            <PortfolioSettingsForm
+              instagramUrl={siteSettingsData.instagram_url ?? ""}
+              facebookUrl={siteSettingsData.facebook_url ?? ""}
+            />
+            <PromptPaySettingsForm
+              promptpayNumber={siteSettingsData.promptpay_number}
+              qrPreviewUrl={promptpayQrPreview}
+            />
           </div>
-
-          <div className="flex shrink-0 items-center gap-3">
-            <Link
-              href="/"
-              target="_blank"
-              className="inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:border-stone-900"
-            >
-              <ExternalLink size={16} />
-              ดูหน้าเว็บจอง
-            </Link>
-            <LogoutButton />
-          </div>
+          <section id="security" className="admin-section">
+            <ChangePasswordForm />
+          </section>
         </div>
 
         <section
-          className={`mb-8 rounded-[1.5rem] border p-5 ${
-            exhaustedNotifications > 0
-              ? "border-amber-200 bg-amber-50"
-              : "border-emerald-200 bg-emerald-50"
-          }`}
+          id="revenue"
+          aria-labelledby="revenue-heading"
+          className="admin-panel admin-section p-4 sm:p-5"
         >
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-start gap-3">
-              {exhaustedNotifications > 0 ? (
-                <AlertTriangle className="mt-0.5 text-amber-700" size={22} />
-              ) : (
-                <ShieldCheck className="mt-0.5 text-emerald-700" size={22} />
-              )}
-              <div>
-                <h2 className="font-semibold text-stone-900">
-                  {exhaustedNotifications > 0
-                    ? `มีการแจ้งเตือนส่งไม่สำเร็จ ${exhaustedNotifications} รายการ`
-                    : "ระบบแจ้งเตือนพร้อมทำงาน"}
-                </h2>
-                <p className="mt-1 text-sm leading-6 text-stone-600">
-                  Cron ทำงานวันละครั้งและแจ้งเตือน operational webhook เมื่อเกิดข้อผิดพลาด
-                </p>
-              </div>
+          <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-medium text-[var(--admin-accent)]">สถิติรายได้</p>
+              <h2 id="revenue-heading" className="mt-1 text-lg font-bold">แนวโน้มรายได้</h2>
             </div>
-            <div className="rounded-full border border-black/10 bg-white/70 px-4 py-2 text-xs font-medium text-stone-600">
-              Retention: {retentionDays ? `${retentionDays} วัน` : "ยังไม่เปิดใช้งาน"}
-            </div>
+            <p className="text-xs text-[var(--admin-muted)]">ข้อมูลช่วงเวลาที่ backend รองรับปัจจุบัน</p>
           </div>
+          <RevenueChart
+            data={analytics.chartData}
+            totalRevenue={analytics.totalRevenue}
+            confirmedCount={analytics.confirmed}
+          />
         </section>
 
-        <div className="mb-8 flex flex-wrap gap-3 rounded-[1.5rem] border border-stone-200/80 bg-white/80 p-2 shadow-[0_12px_40px_rgba(0,0,0,0.04)] backdrop-blur">
-          <Link
-            href="/admin"
-            className="rounded-full border border-stone-900 bg-stone-900 px-5 py-3 text-sm font-semibold tracking-[0.08em] text-white transition hover:bg-white hover:text-stone-900"
-          >
-            รายการจอง
-          </Link>
+        <RecentBookings bookings={bookingList} />
 
-          <Link
-            href="/admin/calendar"
-            className="rounded-full border border-stone-200 bg-white px-5 py-3 text-sm font-semibold tracking-[0.08em] text-stone-700 transition hover:border-stone-900"
-          >
-            ปฏิทินคิว
-          </Link>
-        </div>
-
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
-          <StatCard
-            title="งานวันนี้"
-            value={analytics.today}
-            icon={<CalendarDays size={22} className="text-white" />}
-            color="bg-stone-900"
-          />
-
-          <StatCard
-            title="งานเดือนนี้"
-            value={analytics.thisMonth}
-            icon={<CalendarRange size={22} className="text-white" />}
-            color="bg-stone-800"
-          />
-
-          <StatCard
-            title="รายได้"
-            value={`฿${analytics.totalRevenue.toLocaleString()}`}
-            icon={<CircleDollarSign size={22} className="text-white" />}
-            color="bg-emerald-700"
-          />
-
-          <StatCard
-            title="รอตรวจสอบ"
-            value={analytics.pending}
-            icon={<Clock3 size={22} className="text-white" />}
-            color="bg-amber-500"
-          />
-
-          <StatCard
-            title="ยืนยันแล้ว"
-            value={analytics.confirmed}
-            icon={<BadgeCheck size={22} className="text-white" />}
-            color="bg-green-700"
-          />
-
-          <StatCard
-            title="ยกเลิก"
-            value={analytics.cancelled}
-            icon={<CircleX size={22} className="text-white" />}
-            color="bg-rose-500"
-          />
-
-          <StatCard
-            title="ผู้เข้าชม 24 ชม."
-            value={bookingViews24h}
-            icon={<Eye size={22} className="text-white" />}
-            color="bg-sky-700"
-          />
-        </div>
-
-        <div className="mb-8 rounded-[2rem] border border-stone-200/80 bg-white/90 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.06)] backdrop-blur md:p-6">
-          <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.25em] text-stone-400">
-                ลิงก์ผลงาน
-              </p>
-
-              <h2 className="mt-2 text-xl font-semibold text-stone-900">
-                ปุ่มชมผลงานบนหน้าเว็บจอง
-              </h2>
-            </div>
-
-            <Link
-              href="/booking"
-              target="_blank"
-              className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-900"
-            >
-              <ExternalLink size={17} />
-              เปิดหน้าเว็บจอง
-            </Link>
+        <section
+          id="bookings"
+          aria-labelledby="bookings-heading"
+          className="admin-panel admin-section p-3 sm:p-5"
+        >
+          <div className="mb-4 px-1">
+            <p className="text-xs font-medium text-[var(--admin-accent)]">จัดการรายการจอง</p>
+            <h2 id="bookings-heading" className="mt-1 text-lg font-bold">รายการจองทั้งหมด</h2>
           </div>
-
-          <form action={updatePortfolioLinks} className="grid gap-3 lg:grid-cols-[1fr_1fr_auto]">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-stone-700">
-                ลิงก์ Instagram
-              </label>
-              <input
-                name="instagramUrl"
-                defaultValue={siteSettingsData.instagram_url ?? ""}
-                placeholder="https://www.instagram.com/..."
-                className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-stone-900 focus:bg-white"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-stone-700">
-                ลิงก์ Facebook
-              </label>
-              <input
-                name="facebookUrl"
-                defaultValue={siteSettingsData.facebook_url ?? ""}
-                placeholder="https://www.facebook.com/..."
-                className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-stone-900 focus:bg-white"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="mt-7 inline-flex h-[46px] items-center justify-center gap-2 rounded-full border border-stone-900 bg-stone-900 px-6 text-sm font-semibold text-white transition hover:bg-white hover:text-stone-900"
-            >
-              <Link2 size={17} />
-              บันทึกลิงก์
-            </button>
-          </form>
-        </div>
-
-        <div className="mb-8 rounded-[2rem] border border-stone-200/80 bg-white/90 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.06)] backdrop-blur md:p-6">
-          <div className="mb-5 flex items-start gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-stone-100 text-stone-700">
-              <QrCode size={22} />
-            </div>
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.25em] text-stone-400">
-                การรับชำระเงิน
-              </p>
-              <h2 className="mt-2 text-xl font-semibold text-stone-900">
-                PromptPay และรูป QR รับโอน
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-stone-500">
-                แก้เลข PromptPay หรืออัปโหลดรูป QR ใหม่ รูปเดิมจะยังใช้งานต่อหากไม่ได้เลือกไฟล์ใหม่
-              </p>
-            </div>
-          </div>
-
-          <form
-            action={updatePaymentSettings}
-            className="grid gap-5 lg:grid-cols-[220px_1fr]"
-          >
-            <div className="overflow-hidden rounded-[1.5rem] border border-stone-200 bg-stone-50 p-3">
-              <Image
-                src={promptpayQrPreview}
-                alt="QR PromptPay ปัจจุบัน"
-                width={320}
-                height={320}
-                unoptimized
-                className="h-auto w-full rounded-xl bg-white object-contain"
-              />
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-stone-700">
-                  เลข PromptPay
-                </label>
-                <input
-                  name="promptpayNumber"
-                  inputMode="numeric"
-                  required
-                  minLength={10}
-                  maxLength={15}
-                  defaultValue={siteSettingsData.promptpay_number}
-                  placeholder="กรอกเลข PromptPay 10-15 หลัก"
-                  className="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-stone-900 focus:bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-stone-700">
-                  รูป QR / รูปรับโอนเงิน
-                </label>
-                <input
-                  name="promptpayQr"
-                  type="file"
-                  accept="image/jpeg,image/png"
-                  className="block w-full rounded-2xl border border-dashed border-stone-300 bg-stone-50 px-4 py-4 text-sm text-stone-600 file:mr-4 file:rounded-full file:border-0 file:bg-stone-900 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:border-stone-900"
-                />
-                <p className="mt-2 text-xs text-stone-400">
-                  รองรับ JPG หรือ PNG ขนาดไม่เกิน 3 MB
-                </p>
-              </div>
-
-              <button
-                type="submit"
-                className="inline-flex h-[46px] items-center justify-center gap-2 rounded-full border border-stone-900 bg-stone-900 px-6 text-sm font-semibold text-white transition hover:bg-white hover:text-stone-900"
-              >
-                <Upload size={17} />
-                บันทึกข้อมูลการรับเงิน
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <ChangePasswordForm />
-
-        <div className="mb-8 rounded-[2rem] border border-stone-200/80 bg-white/90 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.06)] backdrop-blur md:p-6">
-          <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.25em] text-stone-400">
-                สถิติรายได้
-              </p>
-
-              <h2 className="mt-2 text-xl font-semibold text-stone-900">
-                แนวโน้มรายได้
-              </h2>
-            </div>
-
-            <p className="text-sm text-stone-500">
-              รายได้จากรายการที่ยืนยันแล้ว
-            </p>
-          </div>
-
-          <div className="rounded-[1.5rem] border border-stone-200 bg-stone-50/70 p-4">
-            <RevenueChart
-              data={
-                chartData as {
-                  date: string;
-                  revenue: number;
-                }[]
-              }
-            />
-          </div>
-        </div>
-
-        <div className="mb-8">
-          <RecentBookings bookings={bookingList} />
-        </div>
-
-        <div className="rounded-[2rem] border border-stone-200/80 bg-white/90 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.06)] backdrop-blur md:p-6">
-          <div className="mb-6">
-            <p className="text-xs font-medium uppercase tracking-[0.25em] text-stone-400">
-              จัดการรายการจอง
-            </p>
-
-            <h2 className="mt-2 text-xl font-semibold text-stone-900">
-              รายการจองทั้งหมด
-            </h2>
-          </div>
-
           <AdminTable
             bookings={bookingList}
             currentPage={page}
-            totalPages={Math.max(
-              1,
-              Math.ceil((count ?? 0) / PAGE_SIZE)
-            )}
+            totalPages={Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE))}
             search={q}
             status={status}
           />
-        </div>
+        </section>
       </div>
     </main>
   );
