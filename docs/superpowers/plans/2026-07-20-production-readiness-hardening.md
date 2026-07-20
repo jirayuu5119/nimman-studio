@@ -31,13 +31,13 @@
 - Consumes: `getSupabaseAuthCookiePrefix(supabaseUrl: string): string | null` from `lib/auth/session-recovery.ts`.
 - Produces: an E2E cookie-cleanup request that works for local and hosted Supabase project refs.
 
-- [ ] **Step 1: Confirm the existing Production regression**
+- [x] **Step 1: Confirm the existing Production regression**
 
 Run `$env:RUN_E2E='1'; $env:E2E_BASE_URL='https://grad.jirayufoto.net'; npm.cmd run test:e2e -- --grep "stale local Auth cookies"`.
 
 Expected: FAIL because the request sends `sb-127-auth-token.0` while Production clears only its configured Supabase project cookie.
 
-- [ ] **Step 2: Replace the hard-coded cookie prefix**
+- [x] **Step 2: Replace the hard-coded cookie prefix**
 
 Add the helper import and derive the cookie from `NEXT_PUBLIC_SUPABASE_URL`:
 
@@ -52,11 +52,11 @@ if (!authCookiePrefix) throw new Error("Invalid NEXT_PUBLIC_SUPABASE_URL");
 
 Send `${authCookiePrefix}.0=stale-session` and assert that exact dynamic prefix is cleared while the unrelated cookie is untouched.
 
-- [ ] **Step 3: Verify GREEN**
+- [x] **Step 3: Verify GREEN**
 
 Run the Step 1 command again. Expected: 1 passed, 0 failed.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 Run `git add -- tests/e2e/smoke.spec.ts` and `git commit -m "test: make auth cookie smoke portable"`.
 

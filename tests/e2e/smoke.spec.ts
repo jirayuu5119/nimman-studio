@@ -2,6 +2,7 @@ import { test, expect, request as requestFactory } from "@playwright/test";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createHmac } from "node:crypto";
 import { addDaysToDateKey, getBangkokDateKey } from "@/lib/booking-rules";
+import { getSupabaseAuthCookiePrefix } from "@/lib/auth/session-recovery";
 import { PRIVACY_NOTICE_VERSION } from "@/lib/privacy";
 
 test.skip(!process.env.RUN_E2E, "Set RUN_E2E=1 to run browser smoke tests");
@@ -223,15 +224,20 @@ test("booking APIs reject malformed input", async ({ request }) => {
 test("stale local Auth cookies can be cleared without touching other cookies", async ({
   request,
 }) => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabaseUrl) throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
+  const authCookiePrefix = getSupabaseAuthCookiePrefix(supabaseUrl);
+  if (!authCookiePrefix) throw new Error("Invalid NEXT_PUBLIC_SUPABASE_URL");
+
   const response = await request.delete("/api/auth/session", {
     headers: {
-      cookie: "sb-127-auth-token.0=stale-session; unrelated-cookie=keep",
+      cookie: `${authCookiePrefix}.0=stale-session; unrelated-cookie=keep`,
     },
   });
 
   expect(response.status()).toBe(200);
   const setCookie = response.headers()["set-cookie"] ?? "";
-  expect(setCookie).toContain("sb-127-auth-token.0=");
+  expect(setCookie).toContain(`${authCookiePrefix}.0=`);
   expect(setCookie).not.toContain("unrelated-cookie=");
 });
 
