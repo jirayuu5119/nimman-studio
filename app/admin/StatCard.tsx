@@ -1,37 +1,51 @@
 import { ReactNode } from "react";
+import type { AdminTone } from "@/lib/admin-dashboard";
+import { cn } from "@/lib/utils";
 
 type Props = {
   title: string;
   value: string | number;
   icon: ReactNode;
-  color: string;
+  tone: AdminTone;
+  detail: string;
+};
+
+const TONE_STYLES: Record<AdminTone, string> = {
+  neutral: "bg-stone-100 text-stone-700",
+  success: "bg-emerald-50 text-emerald-700",
+  warning: "bg-amber-50 text-amber-700",
+  danger: "bg-red-50 text-red-700",
+  info: "bg-sky-50 text-sky-700",
 };
 
 export default function StatCard({
   title,
   value,
   icon,
-  color,
+  tone,
+  detail,
 }: Props) {
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm transition hover:shadow-md">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium text-stone-500">
-            {title}
-          </p>
-
-          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-stone-900">
-            {value}
-          </h2>
-        </div>
-
+    <article className="admin-panel min-h-28 p-3.5 sm:p-4">
+      <div className="flex items-start gap-3">
         <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${color}`}
+          className={cn(
+            "flex size-9 shrink-0 items-center justify-center rounded-xl",
+            TONE_STYLES[tone]
+          )}
         >
           {icon}
         </div>
+        <div className="min-w-0">
+          <p className="text-xs font-medium leading-5 text-[var(--admin-muted)]">
+            {title}
+          </p>
+          <p className="mt-0.5 break-words text-xl font-bold tracking-tight text-[var(--admin-text)] sm:text-2xl">
+            {value}
+          </p>
+          <p className="mt-1 text-[11px] text-[var(--admin-muted)]">{detail}</p>
+        </div>
       </div>
-    </div>
+    </article>
   );
 }
