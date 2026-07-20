@@ -1,4 +1,5 @@
 import AdminGuard from "@/components/AdminGuard";
+import { AdminShell } from "@/components/admin/AdminShell";
 import { requireAdmin } from "@/lib/auth/require-admin";
 
 export const dynamic = "force-dynamic";
@@ -17,5 +18,9 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   await requireAdmin();
-  return <AdminGuard>{children}</AdminGuard>;
+  return (
+    <AdminGuard>
+      <AdminShell>{children}</AdminShell>
+    </AdminGuard>
+  );
 }

@@ -128,7 +128,55 @@
   html {
     @apply font-sans;
   }
-}.rdp-day_button {
+}
+
+.admin-shell {
+  --admin-bg: #f7f4ee;
+  --admin-surface: #ffffff;
+  --admin-surface-muted: #faf8f4;
+  --admin-text: #211e1a;
+  --admin-muted: #7b746b;
+  --admin-sidebar: #201d19;
+  --admin-accent: #806342;
+  --admin-border: #e8e2d9;
+  --admin-success: #2f7d57;
+  --admin-warning: #b56b18;
+  --admin-danger: #b74646;
+  --admin-info: #3f7196;
+  --admin-radius: 16px;
+  background: var(--admin-bg);
+  color: var(--admin-text);
+}
+
+.admin-panel {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  background: var(--admin-surface);
+  box-shadow: 0 14px 40px rgb(68 53 38 / 0.06);
+}
+
+.admin-focus:focus-visible,
+.admin-shell :where(a, button, input, select):focus-visible {
+  outline: 2px solid var(--admin-accent);
+  outline-offset: 3px;
+}
+
+.admin-section {
+  scroll-margin-top: 5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-shell *,
+  .admin-shell *::before,
+  .admin-shell *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+.rdp-day_button {
   position: relative;
 }
 
