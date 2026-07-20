@@ -39,7 +39,7 @@ Before applying the stage 2 migration, confirm the stage 1 backfill checks pass.
 The server validates the date, time slot, package, graduates, phone, text limits,
 and file signature. `create_booking_atomic` locks the date/period, checks active
 bookings and blocked slots, allocates a Bangkok daily counter, inserts the booking,
-and inserts the Discord outbox event in one transaction.
+and inserts the notification outbox event in one transaction.
 
 ## Pricing source of truth
 
@@ -62,11 +62,11 @@ platform-provided client IP is HMAC-hashed with `RATE_LIMIT_HASH_SECRET`; raw IP
 values are not stored or logged. User-Agent is intentionally excluded because it
 is attacker-controlled. Lookup is limited to 6 requests per 10 minutes per IP.
 
-## Discord outbox and retry
+## Telegram outbox and retry
 
 Booking creation inserts a unique `booking_created` outbox event. The server tries
 to send it immediately, while `/api/cron/maintenance` retries failed events with
-bounded exponential backoff. Discord failures never roll back a successful
+bounded exponential backoff. Telegram failures never roll back a successful
 booking. `/api/notify/booking` is intentionally closed to anonymous callers.
 
 ## Audit log
@@ -106,7 +106,8 @@ deleted.
 
 Maintenance emits structured, PII-free logs with request IDs and durations.
 Terminal notification failures and cron failures are sent to the dedicated
-`OPERATIONAL_ALERT_WEBHOOK_URL` when configured. Vercel Analytics and Speed
+private Telegram chat using `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` when
+configured. Vercel Analytics and Speed
 Insights provide aggregate traffic and performance signals.
 
 ## Site settings validation
@@ -122,11 +123,11 @@ Set these in Vercel only; do not commit values:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `DISCORD_WEBHOOK_URL`
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
 - `RATE_LIMIT_HASH_SECRET`
 - `CRON_SECRET`
 - `NEXT_PUBLIC_SITE_URL`
-- `OPERATIONAL_ALERT_WEBHOOK_URL`
 - `LEGACY_BOOKING_TOKEN_ACCEPT_UNTIL`
 - `ORPHAN_SLIP_RETENTION_HOURS` (optional, destructive cleanup opt-in)
 - `CUSTOMER_DATA_RETENTION_DAYS` (optional, privacy retention opt-in)
@@ -140,7 +141,8 @@ Set these in Vercel only; do not commit values:
 5. Apply `20260710084436_production_security_hardening.sql` to close public access and make slips private.
 6. Apply later migrations, including dashboard aggregation, private bucket enforcement, explicit service-role grants, and privacy-retention columns.
 7. Push Auth configuration so TOTP enrollment/verification is enabled.
-8. Configure environment variables, Node.js 24.x, Vercel Cron, and the alert webhook.
+8. Configure environment variables, Node.js 24.x, Vercel Cron, and the approved
+   private Telegram chat.
 9. Enroll every active admin in TOTP and verify AAL2 enforcement.
 10. Run smoke and security checks without creating a fake production booking.
 
@@ -189,4 +191,5 @@ as an object path or log value.
 - `npm run lint`, `npm run typecheck`, `npm run test:coverage`, `npm run test:integration`, and `npm run build` pass.
 - `supabase db lint --local --level warning --fail-on error` reports no errors.
 - E2E smoke tests run against a dedicated non-production URL with `E2E_BASE_URL`.
-- Production verification never creates fake customer bookings or sends fake Discord notifications.
+- Production verification never creates a fake booking or fake operational error;
+  use an explicit Telegram test message instead.
