@@ -209,13 +209,13 @@ Stage the generated migration and commit with `fix: restrict trigger function ex
 - Consumes: authorized Production Supabase configuration.
 - Produces: counts for referenced, unreferenced, older-than-720-hour, and ambiguous legacy objects.
 
-- [ ] **Step 1: Run reconciliation without deletion**
+- [x] **Step 1: Run reconciliation without deletion**
 
 Use a temporary Node script outside the repository or a read-only tool call to page through `bookings.slip_path`, `bookings.slip_url`, and the private `slips` bucket. Apply `getLegacySlipPath` semantics. Do not call `storage.remove`, UPDATE, DELETE, or a mutating RPC.
 
 Expected fields are `database_rows`, `storage_objects`, `referenced_objects`, `ambiguous_references`, and `orphan_candidates_older_than_720h`, each with an integer value.
 
-- [ ] **Step 2: Gate cleanup**
+- [x] **Step 2: Gate cleanup**
 
 Proceed with the 720-hour environment value only if `ambiguous_references=0`; otherwise leave cleanup disabled and record the stage as safely blocked.
 
@@ -227,29 +227,33 @@ Proceed with the 720-hour environment value only if `ambiguous_references=0`; ot
 **Interfaces:**
 - Produces: Production-only secret scopes, explicit retention, and leaked-password protection when the linked Supabase plan supports it.
 
-- [ ] **Step 1: Capture names and scopes without values**
+- [x] **Step 1: Capture names and scopes without values**
 
 Run `npx.cmd vercel env ls` and inspect `.vercel/project.json`. Record names and environments only.
 
-- [ ] **Step 2: Remove Production credentials from Preview**
+- [x] **Step 2: Remove Production credentials from Preview**
 
-Use `npx.cmd vercel env rm NAME preview --yes` for `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, `RATE_LIMIT_HASH_SECRET`, `OPERATIONAL_ALERT_WEBHOOK_URL`, `LEGACY_BOOKING_TOKEN_ACCEPT_UNTIL`, `DISCORD_WEBHOOK_URL`, and any other server secret shared with Preview. Remove `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `NEXT_PUBLIC_SITE_URL` from Preview until an isolated staging backend and URL exist. Remove Telegram variables from all scopes only after `rg -n 'TELEGRAM_'` confirms no code references. Keep Production values intact.
+For variables stored by Vercel as one shared Preview/Production record, preserve an authorized source value first, remove the shared record, and re-add it as Production-only. Vercel CLI 56.3.2 removed the whole shared record when `env rm NAME preview` was used, so the affected Supabase keys and site URL were restored from the authorized local Production file and `CRON_SECRET` plus `RATE_LIMIT_HASH_SECRET` were rotated. Remove `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `NEXT_PUBLIC_SITE_URL` from Preview until an isolated staging backend and URL exist. Remove Telegram variables from all scopes only after `rg -n 'TELEGRAM_'` confirms no code references.
 
-- [ ] **Step 3: Set explicit Production retention**
+- [x] **Step 3: Set explicit Production retention**
 
 Pipe `365` to `npx.cmd vercel env add CUSTOMER_DATA_RETENTION_DAYS production --yes`. After Task 5 passes its gate, pipe `720` to `npx.cmd vercel env add ORPHAN_SLIP_RETENTION_HOURS production --yes`.
 
-- [ ] **Step 4: Enable leaked-password protection**
+- [x] **Step 4: Enable leaked-password protection**
 
 Use the current supported Supabase Auth setting or Management API. If unavailable on the plan, make no simulated application change and record the limitation.
 
-- [ ] **Step 5: Verify hosted settings**
+Execution result: the linked organization is on the Free plan, while Supabase documents leaked-password protection as Pro-only. The existing 12-character mixed-case/digit/symbol policy and MFA remain active.
+
+- [x] **Step 5: Verify hosted settings**
 
 Re-list Vercel scopes and inspect Supabase Auth configuration. Expected: no Production service-role credential in Preview and explicit results for both retention and leaked-password protection.
 
-- [ ] **Step 6: Configure custom SMTP only with real credentials**
+- [x] **Step 6: Configure custom SMTP only with real credentials**
 
 Inspect authorized local and hosted configuration for SMTP variable names without printing values. If a complete existing provider configuration is found, set Supabase Auth SMTP through the supported hosted configuration and send one controlled recovery message to the configured administrator. If no credentials exist, keep recovery enabled with the current Supabase sender and record custom SMTP as an external provider dependency; do not create credentials, purchase a service, or commit a secret.
+
+Execution result: no SMTP credential names exist in authorized local or hosted configuration, so the existing Supabase sender remains enabled and custom SMTP is an external provider dependency.
 
 ### Task 7: Encrypt and Restore-Verify the Backup
 

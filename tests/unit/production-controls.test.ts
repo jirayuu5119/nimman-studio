@@ -19,6 +19,7 @@ import {
   parseOrphanSlipRetentionHours,
 } from "@/lib/retention";
 import { getLegacySlipPath } from "@/lib/slip-path";
+import { selectBookingNotificationWebhook } from "@/lib/notifications/discord-config";
 
 describe("admin MFA enforcement", () => {
   it("requires AAL2 for an active administrator", () => {
@@ -162,6 +163,23 @@ describe("privacy and retention controls", () => {
         privacyNoticeVersion: PRIVACY_NOTICE_VERSION,
       }).success
     ).toBe(true);
+  });
+});
+
+describe("booking notification configuration", () => {
+  it("falls back to the operational webhook when the booking webhook is absent", () => {
+    expect(
+      selectBookingNotificationWebhook({
+        DISCORD_WEBHOOK_URL: "https://discord.example/booking",
+        OPERATIONAL_ALERT_WEBHOOK_URL: "https://discord.example/operations",
+      })
+    ).toBe("https://discord.example/booking");
+    expect(
+      selectBookingNotificationWebhook({
+        OPERATIONAL_ALERT_WEBHOOK_URL: "https://discord.example/operations",
+      })
+    ).toBe("https://discord.example/operations");
+    expect(selectBookingNotificationWebhook({})).toBeNull();
   });
 });
 

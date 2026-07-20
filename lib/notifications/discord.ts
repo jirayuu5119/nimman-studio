@@ -4,9 +4,10 @@ import {
   buildBookingCreatedMessage,
   type DiscordBooking,
 } from "@/lib/notifications/format-booking";
+import { selectBookingNotificationWebhook } from "@/lib/notifications/discord-config";
 
 export async function sendBookingCreatedNotification(booking: DiscordBooking) {
-  const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+  const webhookUrl = selectBookingNotificationWebhook(process.env);
   if (!webhookUrl) return { ok: false as const, code: "WEBHOOK_NOT_CONFIGURED" };
 
   const message = buildBookingCreatedMessage(booking);
