@@ -1,8 +1,8 @@
 import "server-only";
 
-import { sendBookingCreatedNotification } from "@/lib/notifications/discord";
+import { sendBookingCreatedNotification } from "@/lib/notifications/telegram";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { reportOperationalError } from "@/lib/monitoring";
+import { logServerEvent, reportOperationalError } from "@/lib/monitoring";
 
 type OutboxClaim = {
   id: string;
@@ -63,6 +63,12 @@ export async function processOutboxItem(item: OutboxClaim) {
     })
     .eq("id", item.id);
   if (updateError) throw new Error("OUTBOX_UPDATE_FAILED");
+  logServerEvent({
+    level: "warn",
+    event: "booking_notification_delivery",
+    requestId: item.id,
+    code: result.code,
+  });
   if (item.attempts === 8) {
     await reportOperationalError({
       event: "notification_outbox_exhausted",

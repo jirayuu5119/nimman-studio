@@ -1,5 +1,7 @@
 import "server-only";
 
+import { sendTelegramMessage } from "@/lib/notifications/telegram";
+
 type LogLevel = "info" | "warn" | "error";
 
 function safeToken(value: string, max = 100) {
@@ -28,18 +30,15 @@ export function logServerEvent(input: {
   else console.log(serialized);
 }
 
-export async function reportOperationalError(input: {
+type OperationalErrorInput = {
   event: string;
   requestId?: string;
   code: string;
   durationMs?: number;
-}) {
-  logServerEvent({ level: "error", ...input });
+};
 
-  const webhookUrl = process.env.OPERATIONAL_ALERT_WEBHOOK_URL;
-  if (!webhookUrl) return;
-
-  const message = [
+export function buildOperationalAlertMessage(input: OperationalErrorInput) {
+  return [
     "Nimman Foto operational alert",
     `event: ${safeToken(input.event)}`,
     `code: ${safeToken(input.code)}`,
@@ -49,28 +48,19 @@ export async function reportOperationalError(input: {
       : null,
   ]
     .filter(Boolean)
-    .join("\n");
+    .join("\n")
+    .slice(0, 4000);
+}
 
-  try {
-    const response = await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: message, allowed_mentions: { parse: [] } }),
-      cache: "no-store",
-      signal: AbortSignal.timeout(5_000),
-    });
-    if (!response.ok) {
-      logServerEvent({
-        level: "warn",
-        event: "operational_alert_delivery",
-        code: `ALERT_HTTP_${response.status}`,
-      });
-    }
-  } catch {
+export async function reportOperationalError(input: OperationalErrorInput) {
+  logServerEvent({ level: "error", ...input });
+  const result = await sendTelegramMessage(buildOperationalAlertMessage(input));
+  if (!result.ok) {
     logServerEvent({
       level: "warn",
       event: "operational_alert_delivery",
-      code: "ALERT_DELIVERY_FAILED",
+      requestId: input.requestId,
+      code: result.code,
     });
   }
 }
