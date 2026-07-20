@@ -1,8 +1,8 @@
 # Production Readiness Hardening Design
 
-**Date:** 2026-07-20  
-**Project:** Nimman Studio  
-**Selected approach:** Security-first staged rollout  
+**Date:** 2026-07-20
+**Project:** Nimman Studio
+**Selected approach:** Security-first staged rollout
 **Target:** Production at `https://grad.jirayufoto.net`
 
 ## 1. Purpose
