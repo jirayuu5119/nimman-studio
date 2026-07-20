@@ -1,5 +1,10 @@
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { blockCalendarDay, blockCalendarSlot } from "@/app/admin/actions";
+import {
+  buildAdminPeriodMap,
+  getAdminDayStatus,
+} from "@/lib/admin-calendar";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { BlockedSlot, Booking, BookingPeriod } from "@/types/booking";
 
@@ -19,45 +24,11 @@ function getPeriodLabel(period: BookingPeriod) {
   return period === "morning" ? "เช้า" : "บ่าย";
 }
 
-function getDayStatus(hasMorning: boolean, hasAfternoon: boolean) {
-  if (hasMorning && hasAfternoon) {
-    return {
-      label: "เต็ม",
-      className: "border-stone-900 bg-stone-900 text-white",
-    };
-  }
-
-  if (hasMorning || hasAfternoon) {
-    return {
-      label: hasMorning ? "เช้าไม่ว่าง" : "บ่ายไม่ว่าง",
-      className: "border-amber-200 bg-amber-50 text-amber-700",
-    };
-  }
-
-  return {
-    label: "ว่าง",
-    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  };
-}
-
-function buildPeriodMap<T extends { booking_date: string; period: BookingPeriod }>(
-  items: T[]
-) {
-  return items.reduce<Record<string, { morning: boolean; afternoon: boolean }>>(
-    (acc, item) => {
-      if (!acc[item.booking_date]) {
-        acc[item.booking_date] = {
-          morning: false,
-          afternoon: false,
-        };
-      }
-
-      acc[item.booking_date][item.period] = true;
-      return acc;
-    },
-    {}
-  );
-}
+const DAY_STATUS_CLASSES = {
+  open: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  partial: "border-amber-200 bg-amber-50 text-amber-700",
+  full: "border-stone-800 bg-stone-800 text-white",
+};
 
 function BlockSlotButton({
   dateKey,
@@ -77,10 +48,10 @@ function BlockSlotButton({
       <button
         type="submit"
         disabled={disabled}
-        className={`w-full rounded-full border px-3 py-2 text-[11px] font-semibold transition ${
+        className={`admin-focus min-h-9 w-full rounded-lg border px-2 text-[11px] font-semibold transition ${
           disabled
             ? "cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400"
-            : "border-stone-300 bg-white text-stone-700 hover:border-stone-900 hover:bg-stone-900 hover:text-white"
+            : "border-[var(--admin-border)] bg-white text-stone-700 hover:border-[var(--admin-accent)]"
         }`}
       >
         {disabledLabel ?? `ปิดรอบ${getPeriodLabel(period)}`}
@@ -102,10 +73,10 @@ function BlockFullDayButton({
       <button
         type="submit"
         disabled={disabled}
-        className={`w-full rounded-full border px-3 py-2 text-[11px] font-semibold transition ${
+        className={`admin-focus min-h-9 w-full rounded-lg border px-2 text-[11px] font-semibold transition ${
           disabled
             ? "cursor-not-allowed border-stone-200 bg-stone-100 text-stone-400"
-            : "border-red-200 bg-red-50 text-red-700 hover:border-red-700 hover:bg-red-700 hover:text-white"
+            : "border-red-200 bg-red-50 text-red-700 hover:border-red-400"
         }`}
       >
         {disabled ? "ปิดครบทั้งวันแล้ว" : "ปิดคิวทั้งวัน"}
@@ -181,44 +152,45 @@ export default async function AdminCalendarPage({
 
   const bookings = (bookingsResult.data ?? []) as Booking[];
   const blockedSlots = (blockedSlotsResult.data ?? []) as BlockedSlot[];
-  const bookingPeriodMap = buildPeriodMap(bookings);
-  const blockedPeriodMap = buildPeriodMap(blockedSlots);
+  const bookingPeriodMap = buildAdminPeriodMap(bookings);
+  const blockedPeriodMap = buildAdminPeriodMap(blockedSlots);
 
   return (
-    <main className="min-h-screen bg-[#f8f5f0] px-5 py-8 text-stone-900 md:px-8 md:py-10">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <main className="min-h-screen px-3 py-4 sm:px-5 sm:py-5 lg:px-7 xl:px-8">
+      <div className="mx-auto max-w-[1540px] space-y-4">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs font-medium uppercase tracking-[0.35em] text-stone-400">
-              Nimman Foto Admin
+            <p className="text-sm font-medium text-[var(--admin-accent)]">
+              Nimman Foto · ผู้ดูแลระบบ
             </p>
-            <h1 className="mt-4 font-serif text-4xl font-semibold tracking-tight text-stone-900 md:text-5xl">
-              Admin Calendar
+            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-[1.75rem]">
+              ปฏิทินคิว
             </h1>
-            <p className="mt-3 text-sm leading-6 text-stone-500">
+            <p className="mt-1 text-sm leading-6 text-[var(--admin-muted)]">
               ดูคิวจองรายเดือน และปิดรอบเช้าหรือรอบบ่ายจากปฏิทิน
             </p>
           </div>
 
           <Link
             href="/admin"
-            className="inline-flex items-center justify-center rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-900"
+            className="admin-focus inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--admin-border)] bg-white px-4 text-sm font-semibold hover:border-[var(--admin-accent)]"
           >
-            กลับ Dashboard
+            กลับแดชบอร์ด
           </Link>
-        </div>
+        </header>
 
-        <div className="mb-8 rounded-[1.5rem] border border-stone-200/80 bg-white/90 p-5 shadow-[0_12px_40px_rgba(0,0,0,0.04)] backdrop-blur">
+        <section aria-label="เลือกเดือน" className="admin-panel p-3 sm:p-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <Link
               href={prevUrl}
-              className="rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-900"
+              aria-label="เดือนก่อนหน้า"
+              className="admin-focus inline-flex min-h-11 items-center justify-center gap-1 rounded-xl border border-[var(--admin-border)] bg-white px-3 text-sm font-semibold hover:border-[var(--admin-accent)]"
             >
-              เดือนก่อนหน้า
+              <ChevronLeft aria-hidden="true" size={17} /> เดือนก่อนหน้า
             </Link>
 
             <div className="text-center">
-              <h2 className="font-serif text-2xl font-semibold text-stone-900">
+              <h2 className="text-lg font-bold sm:text-xl">
                 {firstDay.toLocaleDateString("th-TH", {
                   month: "long",
                   year: "numeric",
@@ -227,7 +199,7 @@ export default async function AdminCalendarPage({
 
               <Link
                 href="/admin/calendar"
-                className="mt-3 inline-flex rounded-full border border-stone-900 bg-stone-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white hover:text-stone-900"
+                className="admin-focus mt-1 inline-flex rounded-lg px-2 py-1 text-xs font-semibold text-[var(--admin-accent)] hover:bg-[var(--admin-surface-muted)]"
               >
                 เดือนปัจจุบัน
               </Link>
@@ -235,9 +207,10 @@ export default async function AdminCalendarPage({
 
             <Link
               href={nextUrl}
-              className="rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-900"
+              aria-label="เดือนถัดไป"
+              className="admin-focus inline-flex min-h-11 items-center justify-center gap-1 rounded-xl border border-[var(--admin-border)] bg-white px-3 text-sm font-semibold hover:border-[var(--admin-accent)]"
             >
-              เดือนถัดไป
+              เดือนถัดไป <ChevronRight aria-hidden="true" size={17} />
             </Link>
           </div>
 
@@ -252,22 +225,22 @@ export default async function AdminCalendarPage({
               เต็ม
             </span>
           </div>
-        </div>
+        </section>
 
-        <div className="overflow-hidden rounded-[1.5rem] border border-stone-200/80 bg-white/90 shadow-[0_20px_80px_rgba(0,0,0,0.06)]">
-          <div className="grid grid-cols-7 bg-stone-50/80 text-center text-xs font-semibold uppercase tracking-[0.12em] text-stone-500">
+        <section aria-label="ปฏิทินรายการจอง" className="admin-panel overflow-hidden">
+          <div className="hidden grid-cols-7 bg-[var(--admin-surface-muted)] text-center text-xs font-semibold text-[var(--admin-muted)] md:grid">
             {["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"].map((d) => (
-              <div key={d} className="border-r border-stone-200 p-3 last:border-r-0">
+              <div key={d} className="border-r border-[var(--admin-border)] p-2.5 last:border-r-0">
                 {d}
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-7">
+          <div className="grid grid-cols-1 gap-2 p-3 md:grid-cols-7 md:gap-0 md:p-0">
             {Array.from({ length: startWeekday }).map((_, i) => (
               <div
                 key={`empty-${i}`}
-                className="hidden min-h-[180px] border-r border-t border-stone-200 bg-stone-50/40 p-3 md:block"
+                className="hidden min-h-44 border-r border-t border-[var(--admin-border)] bg-[var(--admin-surface-muted)]/55 md:block"
               />
             ))}
 
@@ -297,7 +270,7 @@ export default async function AdminCalendarPage({
               const hasMorning = bookedPeriods.morning || blockedPeriods.morning;
               const hasAfternoon =
                 bookedPeriods.afternoon || blockedPeriods.afternoon;
-              const status = getDayStatus(hasMorning, hasAfternoon);
+              const status = getAdminDayStatus(hasMorning, hasAfternoon);
               const morningDisabledLabel = blockedPeriods.morning
                 ? "เช้าปิดแล้ว"
                 : bookedPeriods.morning
@@ -310,22 +283,22 @@ export default async function AdminCalendarPage({
                 : undefined;
 
               return (
-                <div
+                <article
                   key={dateKey}
-                  className="min-h-[180px] border-t border-stone-200 p-3 md:border-r md:last:border-r-0"
+                  className="min-h-44 rounded-xl border border-[var(--admin-border)] p-3 md:rounded-none md:border-0 md:border-r md:border-t"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-serif text-xl font-semibold text-stone-900">
+                    <span className="text-lg font-bold">
                       {day}
                     </span>
                     <span
-                      className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${status.className}`}
+                      className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${DAY_STATUS_CLASSES[status.tone]}`}
                     >
                       {status.label}
                     </span>
                   </div>
 
-                  <div className="mt-3 grid gap-2">
+                  <div className="mt-3 grid gap-1.5">
                     <BlockFullDayButton
                       dateKey={dateKey}
                       disabled={hasMorning && hasAfternoon}
@@ -342,11 +315,11 @@ export default async function AdminCalendarPage({
                     />
                   </div>
 
-                  <div className="mt-3 space-y-2">
+                  <div className="mt-3 space-y-1.5">
                     {dayBlockedSlots.map((slot) => (
                       <div
                         key={slot.id}
-                        className="rounded-xl border border-stone-200 bg-stone-100 px-3 py-2 text-xs text-stone-600"
+                        className="rounded-lg border border-[var(--admin-border)] bg-stone-100 px-2.5 py-2 text-xs text-stone-600"
                       >
                         <div className="font-semibold text-stone-800">
                           ปิดรอบ{getPeriodLabel(slot.period)}
@@ -361,7 +334,7 @@ export default async function AdminCalendarPage({
                       <Link
                         key={booking.id}
                         href={`/admin/bookings/${booking.id}`}
-                        className="block rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs transition hover:border-stone-400 hover:bg-stone-50"
+                        className="admin-focus block rounded-lg border border-[var(--admin-border)] bg-white px-2.5 py-2 text-xs transition hover:border-[var(--admin-accent)]"
                       >
                         <div className="font-semibold text-stone-900">
                           จองรอบ{getPeriodLabel(booking.period)}
@@ -377,11 +350,11 @@ export default async function AdminCalendarPage({
                       </Link>
                     ))}
                   </div>
-                </div>
+                </article>
               );
             })}
           </div>
-        </div>
+        </section>
       </div>
     </main>
   );

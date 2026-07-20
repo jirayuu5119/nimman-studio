@@ -4,6 +4,7 @@ import type { Booking } from "@/types/booking";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 export const dynamic = "force-dynamic";
@@ -54,9 +55,9 @@ function DetailRow({
   const displayValue = value === "" || value == null ? "-" : value;
 
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-stone-100 py-3 last:border-b-0">
-      <span className="text-sm text-stone-500">{label}</span>
-      <span className="text-right text-sm font-medium text-stone-900">
+    <div className="flex items-start justify-between gap-4 border-b border-[var(--admin-border)] py-3 last:border-b-0">
+      <span className="text-sm text-[var(--admin-muted)]">{label}</span>
+      <span className="max-w-[65%] break-words text-right text-sm font-medium text-[var(--admin-text)]">
         {displayValue}
       </span>
     </div>
@@ -74,7 +75,7 @@ function MoneyRow({
 }) {
   return (
     <div
-      className={`flex items-center justify-between gap-4 rounded-2xl border px-5 py-4 ${
+      className={`flex items-center justify-between gap-4 rounded-xl border px-4 py-3 ${
         highlight
           ? "border-stone-900 bg-stone-900 text-white"
           : "border-stone-200 bg-white text-stone-900"
@@ -87,7 +88,7 @@ function MoneyRow({
       >
         {label}
       </span>
-      <span className="font-serif text-2xl font-semibold">
+      <span className="text-xl font-bold">
         {formatMoney(value)}
       </span>
     </div>
@@ -149,45 +150,45 @@ export default async function BookingDetail({
   }
 
   return (
-    <main className="min-h-screen bg-[#f8f5f0] px-5 py-8 text-stone-900 md:px-8 md:py-10">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <main className="min-h-screen px-3 py-4 sm:px-5 sm:py-5 lg:px-7 xl:px-8">
+      <div className="mx-auto max-w-[1280px] space-y-4">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs font-medium uppercase tracking-[0.35em] text-stone-400">
-              Booking Detail
+            <p className="text-sm font-medium text-[var(--admin-accent)]">
+              รายละเอียดการจอง
             </p>
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <h1 className="font-serif text-4xl font-semibold tracking-tight text-stone-900 md:text-5xl">
+            <div className="mt-1 flex flex-wrap items-center gap-3">
+              <h1 className="break-all text-2xl font-bold tracking-tight sm:text-[1.75rem]">
                 {booking.booking_no}
               </h1>
               <StatusBadge status={booking.status} />
             </div>
-            <p className="mt-3 text-sm leading-6 text-stone-500">
+            <p className="mt-1 text-sm leading-6 text-[var(--admin-muted)]">
               ตรวจสอบข้อมูลลูกค้า ยอดชำระ และสลิปโอนเงิน
             </p>
           </div>
 
-          <a
+          <Link
             href="/admin"
-            className="inline-flex items-center justify-center rounded-full border border-stone-300 bg-white px-5 py-3 text-sm font-semibold text-stone-700 transition hover:border-stone-900"
+            className="admin-focus inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--admin-border)] bg-white px-4 text-sm font-semibold hover:border-[var(--admin-accent)]"
           >
             กลับ Dashboard
-          </a>
-        </div>
+          </Link>
+        </header>
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
-          <section className="space-y-6">
-            <div className="rounded-[2rem] border border-stone-200/80 bg-white/90 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.06)] md:p-6">
+        <div className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
+          <section className="space-y-4">
+            <div className="admin-panel p-4 sm:p-5">
               <div className="mb-4">
-                <p className="text-xs font-medium uppercase tracking-[0.25em] text-stone-400">
+                <p className="text-xs font-medium text-[var(--admin-accent)]">
                   Summary
                 </p>
-                <h2 className="mt-2 text-xl font-semibold text-stone-900">
+                <h2 className="mt-1 text-lg font-bold">
                   ข้อมูลการจอง
                 </h2>
               </div>
 
-              <div className="rounded-2xl border border-stone-200 bg-stone-50/70 px-5 py-2">
+              <div className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface-muted)] px-4 py-1">
                 <DetailRow label="วันที่" value={booking.booking_date} />
                 <DetailRow label="รอบเวลา" value={getPeriodLabel(booking.period)} />
                 <DetailRow label="ช่วงเวลาถ่าย" value={shootingTime} />
@@ -197,12 +198,12 @@ export default async function BookingDetail({
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-stone-200/80 bg-white/90 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.06)] md:p-6">
+            <div className="admin-panel p-4 sm:p-5">
               <div className="mb-4">
-                <p className="text-xs font-medium uppercase tracking-[0.25em] text-stone-400">
+                <p className="text-xs font-medium text-[var(--admin-accent)]">
                   Payment
                 </p>
-                <h2 className="mt-2 text-xl font-semibold text-stone-900">
+                <h2 className="mt-1 text-lg font-bold">
                   สรุปยอดเงิน
                 </h2>
               </div>
@@ -214,12 +215,12 @@ export default async function BookingDetail({
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-stone-200/80 bg-white/90 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.06)] md:p-6">
+            <div className="admin-panel p-4 sm:p-5">
               <div className="mb-4">
-                <p className="text-xs font-medium uppercase tracking-[0.25em] text-stone-400">
+                <p className="text-xs font-medium text-[var(--admin-accent)]">
                   Actions
                 </p>
-                <h2 className="mt-2 text-xl font-semibold text-stone-900">
+                <h2 className="mt-1 text-lg font-bold">
                   อัปเดตสถานะ
                 </h2>
               </div>
@@ -228,7 +229,7 @@ export default async function BookingDetail({
                 <form action={approve}>
                   <button
                     type="submit"
-                    className="w-full rounded-full border border-emerald-700 bg-emerald-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white hover:text-emerald-700"
+                    className="admin-focus min-h-11 w-full rounded-xl border border-emerald-700 bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-white hover:text-emerald-700"
                   >
                     ยืนยัน
                   </button>
@@ -237,7 +238,7 @@ export default async function BookingDetail({
                 <form action={complete}>
                   <button
                     type="submit"
-                    className="w-full rounded-full border border-blue-700 bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white hover:text-blue-700"
+                    className="admin-focus min-h-11 w-full rounded-xl border border-sky-700 bg-sky-700 px-4 text-sm font-semibold text-white transition hover:bg-white hover:text-sky-700"
                   >
                     เสร็จสิ้น
                   </button>
@@ -246,7 +247,7 @@ export default async function BookingDetail({
                 <form action={reject}>
                   <button
                     type="submit"
-                    className="w-full rounded-full border border-red-600 bg-white px-5 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-600 hover:text-white"
+                    className="admin-focus min-h-11 w-full rounded-xl border border-red-300 bg-red-50 px-4 text-sm font-semibold text-red-700 transition hover:border-red-500"
                   >
                     ยกเลิก
                   </button>
@@ -255,18 +256,18 @@ export default async function BookingDetail({
             </div>
           </section>
 
-          <section className="space-y-6">
-            <div className="rounded-[2rem] border border-stone-200/80 bg-white/90 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.06)] md:p-6">
+          <section className="space-y-4">
+            <div className="admin-panel p-4 sm:p-5">
               <div className="mb-4">
-                <p className="text-xs font-medium uppercase tracking-[0.25em] text-stone-400">
+                <p className="text-xs font-medium text-[var(--admin-accent)]">
                   Customer
                 </p>
-                <h2 className="mt-2 text-xl font-semibold text-stone-900">
+                <h2 className="mt-1 text-lg font-bold">
                   ข้อมูลลูกค้า
                 </h2>
               </div>
 
-              <div className="rounded-2xl border border-stone-200 bg-stone-50/70 px-5 py-2">
+              <div className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface-muted)] px-4 py-1">
                 <DetailRow label="ชื่อ" value={booking.fullname} />
                 <DetailRow label="โทร" value={booking.phone} />
                 <DetailRow label="Line" value={booking.line} />
@@ -277,18 +278,18 @@ export default async function BookingDetail({
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-stone-200/80 bg-white/90 p-5 shadow-[0_20px_80px_rgba(0,0,0,0.06)] md:p-6">
+            <div className="admin-panel p-4 sm:p-5">
               <div className="mb-4">
-                <p className="text-xs font-medium uppercase tracking-[0.25em] text-stone-400">
+                <p className="text-xs font-medium text-[var(--admin-accent)]">
                   Slip
                 </p>
-                <h2 className="mt-2 text-xl font-semibold text-stone-900">
+                <h2 className="mt-1 text-lg font-bold">
                   สลิปโอนเงิน
                 </h2>
               </div>
 
               {slipDisplayUrl ? (
-                <div className="overflow-hidden rounded-2xl border border-stone-200 bg-stone-50">
+                <div className="overflow-hidden rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface-muted)]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={slipDisplayUrl}
@@ -297,7 +298,7 @@ export default async function BookingDetail({
                   />
                 </div>
               ) : (
-                <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/70 p-8 text-center text-sm text-stone-500">
+                <div className="rounded-xl border border-dashed border-[var(--admin-border)] bg-[var(--admin-surface-muted)] p-8 text-center text-sm text-[var(--admin-muted)]">
                   ยังไม่มีสลิป
                 </div>
               )}
