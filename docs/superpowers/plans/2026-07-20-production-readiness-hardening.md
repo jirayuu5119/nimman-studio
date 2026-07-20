@@ -298,6 +298,8 @@ Remove the temporary restore copy. Remove the source backup only when F: is read
 
 Run lint, typecheck, unit tests, coverage, production build, high-severity dependency audit, Supabase reset, integration tests, local database lint, and `git diff --check main...HEAD`. Every command must exit 0.
 
+Execution note: after the final database replay, the local Supabase Gateway retained the previous Storage container IP. Gateway logs showed the resulting upstream 502; restarting only the local Gateway refreshed DNS, after which all 9 E2E tests passed. This was isolated to the disposable local Docker network.
+
 - [ ] **Step 2: Review scope and secrets**
 
 Inspect status, full diff, diff stat, and a targeted secret-pattern scan. Expected: approved files only and no credential value.
