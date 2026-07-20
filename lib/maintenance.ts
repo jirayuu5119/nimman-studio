@@ -4,6 +4,7 @@ import { processPendingNotifications } from "@/lib/notifications/outbox";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { addDaysToDateKey, getBangkokDateKey } from "@/lib/booking-rules";
 import { parseCustomerDataRetentionDays } from "@/lib/privacy";
+import { parseOrphanSlipRetentionHours } from "@/lib/retention";
 
 type StorageEntry = {
   name: string;
@@ -35,11 +36,10 @@ function legacySlipPath(slipUrl: string | null) {
 }
 
 function configuredOrphanGraceMs() {
-  const raw = process.env.ORPHAN_SLIP_RETENTION_HOURS;
-  if (!raw) return null;
-
-  const hours = Number(raw);
-  if (!Number.isFinite(hours) || hours < 24 || hours > 24 * 365) return null;
+  const hours = parseOrphanSlipRetentionHours(
+    process.env.ORPHAN_SLIP_RETENTION_HOURS
+  );
+  if (hours === null) return null;
   return hours * 60 * 60 * 1000;
 }
 

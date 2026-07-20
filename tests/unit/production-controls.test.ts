@@ -13,6 +13,11 @@ import {
 } from "@/lib/privacy";
 import { getPublicSiteUrl } from "@/lib/site-url";
 import { validateAdminPassword } from "@/lib/auth/password-policy";
+import {
+  CUSTOMER_DATA_RETENTION_DAYS,
+  ORPHAN_SLIP_RETENTION_HOURS,
+  parseOrphanSlipRetentionHours,
+} from "@/lib/retention";
 
 describe("admin MFA enforcement", () => {
   it("requires AAL2 for an active administrator", () => {
@@ -93,6 +98,16 @@ describe("admin password policy", () => {
 });
 
 describe("privacy and retention controls", () => {
+  it("uses fail-closed production retention values", () => {
+    expect(CUSTOMER_DATA_RETENTION_DAYS).toBe(365);
+    expect(ORPHAN_SLIP_RETENTION_HOURS).toBe(720);
+    expect(parseOrphanSlipRetentionHours("720")).toBe(720);
+    expect(parseOrphanSlipRetentionHours("23")).toBeNull();
+    expect(parseOrphanSlipRetentionHours("8761")).toBeNull();
+    expect(parseOrphanSlipRetentionHours("720.5")).toBeNull();
+    expect(parseOrphanSlipRetentionHours(720)).toBeNull();
+  });
+
   it("accepts only the configured retention safety range", () => {
     expect(parseCustomerDataRetentionDays("")).toBeNull();
     expect(parseCustomerDataRetentionDays("364")).toBeNull();

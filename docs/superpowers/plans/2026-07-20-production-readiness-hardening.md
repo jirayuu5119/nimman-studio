@@ -73,7 +73,7 @@ Run `git add -- tests/e2e/smoke.spec.ts` and `git commit -m "test: make auth coo
 - Produces: `ORPHAN_SLIP_RETENTION_HOURS = 720` and `CUSTOMER_DATA_RETENTION_DAYS = 365` policy constants.
 - Consumes: `parseCustomerDataRetentionDays(value: unknown): number | null` without changing its 365-3650 safety range.
 
-- [ ] **Step 1: Write failing policy tests**
+- [x] **Step 1: Write failing policy tests**
 
 ```ts
 expect(CUSTOMER_DATA_RETENTION_DAYS).toBe(365);
@@ -85,11 +85,11 @@ expect(parseOrphanSlipRetentionHours("720.5")).toBeNull();
 expect(parseOrphanSlipRetentionHours(720)).toBeNull();
 ```
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run `npm.cmd test -- tests/unit/production-controls.test.ts`. Expected: FAIL because `@/lib/retention` does not exist.
 
-- [ ] **Step 3: Implement the pure retention helper**
+- [x] **Step 3: Implement the pure retention helper**
 
 ```ts
 export const CUSTOMER_DATA_RETENTION_DAYS = 365;
@@ -110,11 +110,11 @@ export function parseOrphanSlipRetentionHours(value: unknown) {
 
 Import the helper in `lib/maintenance.ts`, replace its private numeric parsing, and multiply the parsed integer by `60 * 60 * 1000`. Export the 365-day policy through `lib/privacy.ts` so visible wording and hosted configuration use one value.
 
-- [ ] **Step 4: Verify GREEN**
+- [x] **Step 4: Verify GREEN**
 
 Run the Step 2 command. Expected: all tests in `production-controls.test.ts` pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 Stage the four files explicitly and commit with `feat: validate retention configuration`.
 
