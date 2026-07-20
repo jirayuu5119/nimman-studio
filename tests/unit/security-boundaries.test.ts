@@ -27,10 +27,10 @@ describe("file signatures", () => {
 });
 
 describe("safe external output", () => {
-  it("removes control characters and truncates Discord content", () => {
+  it("removes control characters and bounds Telegram plain text", () => {
     const message = buildBookingCreatedMessage({
       booking_no: "NF-20260710-0001",
-      fullname: `Name\u0000${"x".repeat(3000)}`,
+      fullname: `Name\u0000${"x".repeat(5000)}`,
       phone: "0812345678",
       line: null,
       booking_date: "2026-07-10",
@@ -42,7 +42,8 @@ describe("safe external output", () => {
       total_price: 4000,
     });
     expect(message).not.toContain("\u0000");
-    expect(message.length).toBeLessThanOrEqual(1900);
+    expect(message).toContain("Booking: NF-20260710-0001");
+    expect(message.length).toBeLessThanOrEqual(4000);
   });
 
   it("allows only expected HTTPS social hosts", () => {
