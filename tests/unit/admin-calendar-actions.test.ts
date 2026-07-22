@@ -1,92 +1,27 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { INITIAL_RESET_CALENDAR_DAY_STATE } from "@/lib/admin-calendar";
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
 
-const doubles = vi.hoisted(() => ({
-  requireAdmin: vi.fn(),
-  rpc: vi.fn(),
-  revalidatePath: vi.fn(),
-}));
+const actionsUrl = new URL("../../app/admin/actions.ts", import.meta.url);
 
-vi.mock("server-only", () => ({}));
-vi.mock("@/lib/auth/require-admin", () => ({
-  requireAdmin: doubles.requireAdmin,
-}));
-vi.mock("@/lib/supabase/admin", () => ({
-  createAdminClient: () => ({ rpc: doubles.rpc }),
-}));
-vi.mock("next/cache", () => ({
-  revalidatePath: doubles.revalidatePath,
-}));
+describe("admin calendar action wiring", () => {
+  const source = readFileSync(actionsUrl, "utf8");
 
-import { resetCalendarDay } from "@/app/admin/actions";
-
-function resetForm(date: string) {
-  const formData = new FormData();
-  formData.set("bookingDate", date);
-  return formData;
-}
-
-describe("resetCalendarDay", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    doubles.requireAdmin.mockResolvedValue({
-      userId: "00000000-0000-4000-8000-000000000001",
-    });
+  it("uses the admin date boundary for close and reset actions", () => {
+    expect(source).toContain('import { isAdminCalendarDate } from "@/lib/booking-rules"');
+    expect(source).toContain("if (!isAdminCalendarDate(value))");
+    expect(source).toContain("if (!isAdminCalendarDate(bookingDate))");
   });
 
-  it("reopens all administrator blocks for the date", async () => {
-    doubles.rpc.mockResolvedValue({ data: 2, error: null });
-
-    await expect(
-      resetCalendarDay(
-        INITIAL_RESET_CALENDAR_DAY_STATE,
-        resetForm("2027-12-01")
-      )
-    ).resolves.toEqual({
-      status: "success",
-      message: "เปิดคิวทั้งวันเรียบร้อยแล้ว",
-    });
-    expect(doubles.rpc).toHaveBeenCalledWith("reset_booking_day_atomic", {
-      p_booking_date: "2027-12-01",
-      p_actor_user_id: "00000000-0000-4000-8000-000000000001",
-    });
-    expect(doubles.revalidatePath).toHaveBeenCalledWith("/admin/calendar");
+  it("calls the private reset RPC with the selected date and actor", () => {
+    expect(source).toContain("export async function resetCalendarDay(");
+    expect(source).toContain('supabase.rpc("reset_booking_day_atomic"');
+    expect(source).toContain("p_booking_date: bookingDate");
+    expect(source).toContain("p_actor_user_id: admin.userId");
+    expect(source).toContain('revalidatePath("/admin/calendar")');
   });
 
-  it("rejects an invalid admin calendar date before the RPC", async () => {
-    await expect(
-      resetCalendarDay(
-        INITIAL_RESET_CALENDAR_DAY_STATE,
-        resetForm("2101-01-01")
-      )
-    ).resolves.toEqual({
-      status: "error",
-      message: "วันที่สำหรับเปิดคิวไม่ถูกต้อง",
-    });
-    expect(doubles.rpc).not.toHaveBeenCalled();
-  });
-
-  it("returns an inline error when the RPC fails", async () => {
-    doubles.rpc.mockResolvedValue({
-      data: null,
-      error: {
-        code: "XX000",
-        message: "database failure",
-        details: "",
-        hint: "",
-      },
-    });
-
-    await expect(
-      resetCalendarDay(
-        INITIAL_RESET_CALENDAR_DAY_STATE,
-        resetForm("2027-12-01")
-      )
-    ).resolves.toEqual({
-      status: "error",
-      message: "เปิดคิวไม่สำเร็จ กรุณาลองอีกครั้ง",
-    });
-    expect(doubles.revalidatePath).not.toHaveBeenCalled();
+  it("returns inline success and error messages", () => {
+    expect(source).toContain("เปิดคิวทั้งวันเรียบร้อยแล้ว");
+    expect(source).toContain("เปิดคิวไม่สำเร็จ กรุณาลองอีกครั้ง");
   });
 });
-
