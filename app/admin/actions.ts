@@ -6,7 +6,8 @@ import { requireAdmin } from "@/lib/auth/require-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createServerAuthClient } from "@/lib/supabase/server-auth";
 import { parseAllowedSiteUrl } from "@/lib/site-url";
-import { isBookableDate } from "@/lib/booking-rules";
+import { isAdminCalendarDate } from "@/lib/booking-rules";
+import type { ResetCalendarDayState } from "@/lib/admin-calendar";
 import { detectValidSlipType } from "@/lib/slip-validation";
 import { getSiteSettings } from "@/lib/siteSettings";
 import { normalizePromptPayNumber } from "@/lib/payment-settings";
@@ -19,8 +20,8 @@ const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function assertDate(value: string) {
-  if (!isBookableDate(value)) {
-    throw new Error("Invalid booking date");
+  if (!isAdminCalendarDate(value)) {
+    throw new Error("Invalid admin calendar date");
   }
 }
 
@@ -79,6 +80,41 @@ export async function blockCalendarDay(formData: FormData) {
 
   if (error) throw new Error("BLOCK_DAY_FAILED");
   revalidatePath("/admin/calendar");
+}
+
+export async function resetCalendarDay(
+  _previousState: ResetCalendarDayState,
+  formData: FormData
+): Promise<ResetCalendarDayState> {
+  const bookingDate = String(formData.get("bookingDate") ?? "");
+
+  try {
+    const admin = await requireAdmin();
+    if (!isAdminCalendarDate(bookingDate)) {
+      return { status: "error", message: "วันที่สำหรับเปิดคิวไม่ถูกต้อง" };
+    }
+
+    const supabase = createAdminClient();
+    const { error } = await supabase.rpc("reset_booking_day_atomic", {
+      p_booking_date: bookingDate,
+      p_actor_user_id: admin.userId,
+    });
+
+    if (error) {
+      return {
+        status: "error",
+        message: "เปิดคิวไม่สำเร็จ กรุณาลองอีกครั้ง",
+      };
+    }
+
+    revalidatePath("/admin/calendar");
+    return { status: "success", message: "เปิดคิวทั้งวันเรียบร้อยแล้ว" };
+  } catch {
+    return {
+      status: "error",
+      message: "เปิดคิวไม่สำเร็จ กรุณาลองอีกครั้ง",
+    };
+  }
 }
 
 export async function updatePortfolioLinks(formData: FormData) {

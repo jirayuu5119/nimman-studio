@@ -6,6 +6,7 @@ export const DEPOSIT_AMOUNT = 1000;
 export const MIN_GRADUATES = 1;
 export const MAX_GRADUATES = 5;
 export const BOOKING_HORIZON_DAYS = 365;
+export const ADMIN_CALENDAR_MAX_DATE = "2100-12-31";
 
 export function calculateBookingPrice(hours: 3 | 4, graduates: number) {
   const packageInfo = PACKAGES[hours];
@@ -62,13 +63,22 @@ export function addDaysToDateKey(dateKey: string, days: number) {
 }
 
 export function isBookableDate(dateKey: string, now = new Date()) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return false;
-
-  const parsed = new Date(`${dateKey}T00:00:00.000Z`);
-  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== dateKey) {
-    return false;
-  }
+  if (!isValidDateKey(dateKey)) return false;
 
   const today = getBangkokDateKey(now);
   return dateKey >= today && dateKey <= addDaysToDateKey(today, BOOKING_HORIZON_DAYS);
+}
+
+function isValidDateKey(dateKey: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return false;
+
+  const parsed = new Date(`${dateKey}T00:00:00.000Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === dateKey;
+}
+
+export function isAdminCalendarDate(dateKey: string, now = new Date()) {
+  if (!isValidDateKey(dateKey)) return false;
+
+  const today = getBangkokDateKey(now);
+  return dateKey >= today && dateKey <= ADMIN_CALENDAR_MAX_DATE;
 }

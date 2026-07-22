@@ -3,6 +3,7 @@ import {
   addDaysToDateKey,
   calculateBookingPrice,
   getBangkokDateKey,
+  isAdminCalendarDate,
   isBookableDate,
   isSupportedTimeSlot,
 } from "@/lib/booking-rules";
@@ -38,6 +39,14 @@ describe("booking date and time rules", () => {
     expect(isBookableDate("2026-07-10", now)).toBe(true);
     expect(isBookableDate(addDaysToDateKey("2026-07-10", 365), now)).toBe(true);
     expect(isBookableDate(addDaysToDateKey("2026-07-10", 366), now)).toBe(false);
+  });
+
+  it("allows admins to block December 2027 without extending the customer booking horizon", () => {
+    expect(isBookableDate("2027-12-01", now)).toBe(false);
+    expect(isAdminCalendarDate("2027-12-01", now)).toBe(true);
+    expect(isAdminCalendarDate("2026-07-09", now)).toBe(false);
+    expect(isAdminCalendarDate("2100-12-31", now)).toBe(true);
+    expect(isAdminCalendarDate("2101-01-01", now)).toBe(false);
   });
 
   it("accepts only configured time/package combinations", () => {
