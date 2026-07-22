@@ -1,5 +1,23 @@
 import type { BookingPeriod } from "@/types/booking";
 
+export type ResetCalendarDayState = {
+  status: "idle" | "success" | "error";
+  message: string;
+};
+
+export const INITIAL_RESET_CALENDAR_DAY_STATE: ResetCalendarDayState = {
+  status: "idle",
+  message: "",
+};
+
+export function hasAdminBlockedSlots<T>(items: readonly T[]) {
+  return items.length > 0;
+}
+
+export function getResetCalendarDayConfirmation(dateLabel: string) {
+  return `ยืนยันเปิดคิวทั้งวันสำหรับ ${dateLabel}? คิวลูกค้าที่จองแล้วจะยังคงอยู่`;
+}
+
 export function getAdminDayStatus(
   hasMorning: boolean,
   hasAfternoon: boolean

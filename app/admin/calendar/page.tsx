@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { blockCalendarDay, blockCalendarSlot } from "@/app/admin/actions";
+import { ResetCalendarDayButton } from "@/components/admin/ResetCalendarDayButton";
 import {
   buildAdminPeriodMap,
   getAdminDayStatus,
+  hasAdminBlockedSlots,
 } from "@/lib/admin-calendar";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { BlockedSlot, Booking, BookingPeriod } from "@/types/booking";
@@ -248,6 +250,11 @@ export default async function AdminCalendarPage({
               const day = i + 1;
               const date = new Date(year, month, day);
               const dateKey = formatDateLocal(date);
+              const dateLabel = date.toLocaleDateString("th-TH", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              });
 
               const dayBookings = bookings.filter(
                 (b) => b.booking_date === dateKey
@@ -313,6 +320,12 @@ export default async function AdminCalendarPage({
                       period="afternoon"
                       disabledLabel={afternoonDisabledLabel}
                     />
+                    {hasAdminBlockedSlots(dayBlockedSlots) ? (
+                      <ResetCalendarDayButton
+                        dateKey={dateKey}
+                        dateLabel={dateLabel}
+                      />
+                    ) : null}
                   </div>
 
                   <div className="mt-3 space-y-1.5">
